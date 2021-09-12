@@ -20,6 +20,7 @@ use anchor_lang::solana_program;
 use anchor_lang::solana_program::instruction::Instruction;
 use std::convert::Into;
 use std::collections::BTreeMap;
+use anchor_spl::token::{self, Burn, MintTo};
 
 #[program]
 pub mod bridge {
@@ -40,6 +41,32 @@ pub mod bridge {
         bridge.owner_set_seqno = 0;
         bridge.deposit_counts = BTreeMap::new();
         bridge.resource_id_to_token_program = resource_id_to_token_program;
+        Ok(())
+    }
+
+    // Initiates a transfer by creating a deposit account
+    pub fn create_deposit(
+        ctx: Context<CreateDeposit>,
+        amount: u64,
+        receiver: Vec<u8>,
+        dest_chain_id: u8,
+        resource_id: [u8;32],
+    ) -> Result<()> {
+        //burn
+        token::burn(ctx.accounts.into(), amount)?;
+
+        let bridge_account = &mut ctx.accounts.bridge;
+        let deposit_account = &mut ctx.accounts.deposit;
+        let deposit_count =  bridge_account.deposit_counts.entry(dest_chain_id).or_insert(0);
+
+        // update bridge deposit counts
+        *deposit_count += 1;
+        // update deposit
+        deposit_account.amount = amount;
+        deposit_account.receiver = receiver;
+        deposit_account.dest_chain_id = dest_chain_id;
+        deposit_account.resource_id = resource_id;
+        deposit_account.deposit_nonce = *deposit_count;
         Ok(())
     }
 
@@ -192,6 +219,22 @@ pub struct CreateBridge<'info> {
 }
 
 #[derive(Accounts)]
+pub struct CreateDeposit<'info> {
+    #[account(mut)]
+    bridge: ProgramAccount<'info, Bridge>,
+    #[account(zero)]
+    deposit: ProgramAccount<'info, Deposit>,
+    #[account(signer)]
+    pub authority: AccountInfo<'info>,
+    #[account(mut)]
+    pub mint: AccountInfo<'info>,
+    #[account(mut)]
+    pub from: AccountInfo<'info>,
+    pub token_program: AccountInfo<'info>,
+    rent: Sysvar<'info, Rent>,
+}
+
+#[derive(Accounts)]
 pub struct CreateProposal<'info> {
     bridge: ProgramAccount<'info, Bridge>,
     #[account(zero)]
@@ -226,7 +269,18 @@ pub struct Bridge {
     pub owner_set_seqno: u32,
     // destinationChainID => number of deposits
     pub deposit_counts: BTreeMap<u8, u64>,
+    // resource id => token program address
     pub resource_id_to_token_program: BTreeMap<[u8;32], Pubkey>,
+}
+
+#[account]
+pub struct Deposit {
+    pub amount: u64,
+    pub depositer: Pubkey,
+    pub receiver: Vec<u8>,
+    pub dest_chain_id: u8,
+    pub resource_id: [u8;32],
+    pub deposit_nonce: u64,
 }
 
 #[account]
@@ -287,6 +341,19 @@ impl From<&AccountMeta> for ProposalAccount {
     }
 }
 
+
+impl<'a, 'b, 'c, 'info> From<&mut CreateDeposit<'info>> for CpiContext<'a, 'b, 'c, 'info, Burn<'info>> {
+    fn from(accounts: &mut CreateDeposit<'info>) -> CpiContext<'a, 'b, 'c, 'info, Burn<'info>> {
+        let cpi_accounts = Burn {
+            mint: accounts.mint.clone(),
+            to: accounts.from.clone(),
+            authority: accounts.authority.clone(),
+        };
+        let cpi_program = accounts.token_program.clone();
+        CpiContext::new(cpi_program, cpi_accounts)
+    }
+}
+
 #[error]
 pub enum ErrorCode {
     #[msg("The given owner is not part of this bridge.")]
@@ -307,4 +374,6 @@ pub enum ErrorCode {
     InvalidThreshold,
     #[msg("program id account data must have same length")]
     ParamLength,
+    #[msg("chain id not found")]
+    InvalidChainId,
 }
