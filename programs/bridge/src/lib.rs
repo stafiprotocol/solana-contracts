@@ -16,8 +16,6 @@
 //! To sign, owners should invoke the `approve` instruction.
 
 use anchor_lang::prelude::*;
-use anchor_lang::solana_program;
-use anchor_lang::solana_program::instruction::Instruction;
 use std::convert::Into;
 use std::collections::BTreeMap;
 use anchor_spl::token::{self, Burn, MintTo};
@@ -72,15 +70,12 @@ pub mod bridge {
 
     // Creates a new proposal account
     // which must be one of the owners of the bridge.
-    pub fn create_proposal(
-        ctx: Context<CreateProposal>,
-        pids: Vec<Pubkey>,
-        accs: Vec<Vec<ProposalAccount>>,
-        datas: Vec<Vec<u8>>,
+    pub fn create_mint_proposal(
+        ctx: Context<CreateMintProposal>,
+        mint: Pubkey,
+        to: Pubkey,
+        token_program: Pubkey,
     ) -> Result<()> {
-        if pids.len() != accs.len() || pids.len() != datas.len() {
-            return Err(ErrorCode::ParamLength.into());
-        }
         let _ = ctx
             .accounts
             .bridge
@@ -93,9 +88,9 @@ pub mod bridge {
         signers.resize(ctx.accounts.bridge.owners.len(), false);
 
         let tx = &mut ctx.accounts.proposal;
-        tx.program_ids = pids;
-        tx.accounts = accs;
-        tx.datas = datas;
+        tx.mint = mint;
+        tx.to = to;
+        tx.token_program = token_program;
         tx.signers = signers;
         tx.bridge = *ctx.accounts.bridge.to_account_info().key;
         tx.did_execute = false;
@@ -111,7 +106,7 @@ pub mod bridge {
             .bridge
             .owners
             .iter()
-            .position(|a| a == ctx.accounts.owner.key)
+            .position(|a| a == ctx.accounts.approver.key)
             .ok_or(ErrorCode::InvalidOwner)?;
 
         ctx.accounts.proposal.signers[owner_index] = true;
@@ -134,30 +129,9 @@ pub mod bridge {
         }
 
         // Execute the proposal signed by the bridge.
-        let mut ixs: Vec<Instruction> = (&*ctx.accounts.proposal).into();
-        for ix in ixs.iter_mut() {
-            ix.accounts = ix
-                .accounts
-                .iter()
-                .map(|acc| {
-                    let mut acc = acc.clone();
-                    if &acc.pubkey == ctx.accounts.bridge_signer.key {
-                        acc.is_signer = true;
-                    }
-                    acc
-                })
-                .collect();
-        }
+        let amount = ctx.accounts.proposal.amount;
 
-        let seeds = &[
-            ctx.accounts.bridge.to_account_info().key.as_ref(),
-            &[ctx.accounts.bridge.nonce],
-        ];
-        let signer = &[&seeds[..]];
-        let accounts = ctx.remaining_accounts;
-        for ix in ixs.iter() {
-            solana_program::program::invoke_signed(ix, &accounts, signer)?;
-        }
+        token::mint_to(ctx.accounts.into(), amount)?;
 
         // Burn the proposal to ensure one time use.
         ctx.accounts.proposal.did_execute = true;
@@ -225,7 +199,7 @@ pub struct CreateDeposit<'info> {
     #[account(zero)]
     deposit: ProgramAccount<'info, Deposit>,
     #[account(signer)]
-    pub authority: AccountInfo<'info>,
+    pub authority: AccountInfo<'info>,//token account owner
     #[account(mut)]
     pub mint: AccountInfo<'info>,
     #[account(mut)]
@@ -235,10 +209,10 @@ pub struct CreateDeposit<'info> {
 }
 
 #[derive(Accounts)]
-pub struct CreateProposal<'info> {
+pub struct CreateMintProposal<'info> {
     bridge: ProgramAccount<'info, Bridge>,
     #[account(zero)]
-    proposal: ProgramAccount<'info, Proposal>,
+    proposal: ProgramAccount<'info, MintProposal>,
     // One of the owners. Checked in the handler.
     #[account(signer)]
     proposer: AccountInfo<'info>,
@@ -255,10 +229,16 @@ pub struct Approve<'info> {
     )]
     bridge_signer: AccountInfo<'info>,
     #[account(mut, has_one = bridge)]
-    proposal: ProgramAccount<'info, Proposal>,
+    proposal: ProgramAccount<'info, MintProposal>,
     // One of the bridge owners. Checked in the handler.
     #[account(signer)]
-    owner: AccountInfo<'info>,
+    approver: AccountInfo<'info>,
+
+    #[account(mut)]
+    pub mint: AccountInfo<'info>,
+    #[account(mut)]
+    pub to: AccountInfo<'info>,
+    pub token_program: AccountInfo<'info>,
 }
 
 #[account]
@@ -284,35 +264,23 @@ pub struct Deposit {
 }
 
 #[account]
-pub struct Proposal {
+pub struct MintProposal {
     // The bridge account this proposal belongs to.
     pub bridge: Pubkey,
-    // Target program to execute against.
-    pub program_ids: Vec<Pubkey>,
-    // Accounts requried for the proposal.
-    pub accounts: Vec<Vec<ProposalAccount>>,
-    // Instruction datas for the proposal.
-    pub datas: Vec<Vec<u8>>,
     // signers[index] is true if bridge.owners[index] signed the proposal.
     pub signers: Vec<bool>,
     // Boolean ensuring one time execution.
     pub did_execute: bool,
     // Owner set sequence number.
     pub owner_set_seqno: u32,
-}
-
-impl From<&Proposal> for Vec<Instruction> {
-    fn from(tx: &Proposal) -> Vec<Instruction> {
-        let mut instructions: Vec<Instruction> = Vec::new();
-        for (i, _pid) in tx.program_ids.iter().enumerate() {
-            instructions.push(Instruction {
-                program_id: tx.program_ids[i],
-                accounts: tx.accounts[i].iter().map(AccountMeta::from).collect(),
-                data: tx.datas[i].clone(),
-            })
-        }
-        instructions
-    }
+    // spl mint account
+    pub mint: Pubkey,
+    // mint to account
+    pub to: Pubkey,
+    // mint account
+    pub amount: u64,
+    //spl token program
+    pub token_program: Pubkey,
 }
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone)]
@@ -353,6 +321,22 @@ impl<'a, 'b, 'c, 'info> From<&mut CreateDeposit<'info>> for CpiContext<'a, 'b, '
         CpiContext::new(cpi_program, cpi_accounts)
     }
 }
+
+
+impl<'a, 'b, 'c, 'info> From<&mut Approve<'info>>
+    for CpiContext<'a, 'b, 'c, 'info, MintTo<'info>>
+{
+    fn from(accounts: &mut Approve<'info>) -> CpiContext<'a, 'b, 'c, 'info, MintTo<'info>> {
+        let cpi_accounts = MintTo {
+            mint: accounts.mint.clone(),
+            to: accounts.to.clone(),
+            authority: accounts.bridge_signer.clone(),
+        };
+        let cpi_program = accounts.token_program.clone();
+        CpiContext::new(cpi_program, cpi_accounts)
+    }
+}
+
 
 #[error]
 pub enum ErrorCode {
