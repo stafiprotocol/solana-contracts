@@ -1,4 +1,4 @@
-anchor_version = "0.14.0"
+anchor_version = "0.15.0"
 
 [provider]
 cluster = "https://api.devnet.solana.com"

@@ -20,6 +20,8 @@ use std::convert::Into;
 use std::collections::BTreeMap;
 use anchor_spl::token::{self, Burn, MintTo};
 
+declare_id!("Cqpdbx8h2uVj4s3aKHCnhTdbgxx9eRSFg3UwPE7te9M6");
+
 #[program]
 pub mod bridge {
     use super::*;
@@ -30,7 +32,8 @@ pub mod bridge {
         owners: Vec<Pubkey>,
         threshold: u64,
         nonce: u8,
-        resource_id_to_token_program: BTreeMap<[u8;32], Pubkey>,
+        resource_id_to_mint: BTreeMap<[u8;32], Pubkey>,
+        admin: Pubkey,
     ) -> Result<()> {
         let bridge = &mut ctx.accounts.bridge;
         bridge.owners = owners;
@@ -38,12 +41,23 @@ pub mod bridge {
         bridge.nonce = nonce;
         bridge.owner_set_seqno = 0;
         bridge.deposit_counts = BTreeMap::new();
-        bridge.resource_id_to_token_program = resource_id_to_token_program;
+        bridge.resource_id_to_mint = resource_id_to_mint;
+        bridge.admin = admin;
+        Ok(())
+    }
+
+    pub fn set_resource_id(
+        ctx: Context<AdminAuth>,
+        resource_id: [u8;32],
+        mint: Pubkey,
+    ) -> Result<()> {
+        let bridge = &mut ctx.accounts.bridge;
+        bridge.resource_id_to_mint.insert(resource_id, mint);
         Ok(())
     }
 
     // Initiates a transfer by creating a deposit account
-    pub fn create_deposit(
+    pub fn burn_and_create_deposit(
         ctx: Context<CreateDeposit>,
         amount: u64,
         receiver: Vec<u8>,
@@ -72,8 +86,9 @@ pub mod bridge {
     // which must be one of the owners of the bridge.
     pub fn create_mint_proposal(
         ctx: Context<CreateMintProposal>,
-        mint: Pubkey,
+        resource_id: [u8;32],
         to: Pubkey,
+        amount: u64,
         token_program: Pubkey,
     ) -> Result<()> {
         let _ = ctx
@@ -87,20 +102,29 @@ pub mod bridge {
         let mut signers = Vec::new();
         signers.resize(ctx.accounts.bridge.owners.len(), false);
 
-        let tx = &mut ctx.accounts.proposal;
-        tx.mint = mint;
-        tx.to = to;
-        tx.token_program = token_program;
-        tx.signers = signers;
-        tx.bridge = *ctx.accounts.bridge.to_account_info().key;
-        tx.did_execute = false;
-        tx.owner_set_seqno = ctx.accounts.bridge.owner_set_seqno;
+        let p = &mut ctx.accounts.proposal;
+        let mint_op = ctx.accounts.bridge.resource_id_to_mint.get(&resource_id);
+        let mint = if let Some(m) = mint_op{
+            m
+        }else{
+            return Err(ErrorCode::InvalidResourceId.into());
+        };
+
+        p.mint = *mint;
+        p.to = to;
+        p.amount = amount;
+        p.token_program = token_program;
+        p.signers = signers;
+        p.bridge = *ctx.accounts.bridge.to_account_info().key;
+        p.did_execute = false;
+        p.owner_set_seqno = ctx.accounts.bridge.owner_set_seqno;
 
         Ok(())
     }
 
     // Approve and Executes the given proposal if threshold owners have signed it.
-    pub fn approve(ctx: Context<Approve>) -> Result<()> {
+    pub fn approve_mint_proposal(ctx: Context<Approve>) -> Result<()> {
+        msg!("000");
         let owner_index = ctx
             .accounts
             .bridge
@@ -110,7 +134,7 @@ pub mod bridge {
             .ok_or(ErrorCode::InvalidOwner)?;
 
         ctx.accounts.proposal.signers[owner_index] = true;
-
+        msg!("111");
         // Do we have enough signers.
         let sig_count = ctx
             .accounts
@@ -119,6 +143,8 @@ pub mod bridge {
             .iter()
             .filter(|&did_sign| *did_sign)
             .count() as u64;
+        
+            msg!("222");
         if sig_count < ctx.accounts.bridge.threshold {
             return Ok(());
         }
@@ -128,12 +154,32 @@ pub mod bridge {
             return Err(ErrorCode::AlreadyExecuted.into());
         }
 
-        // Execute the proposal signed by the bridge.
+        if ctx.accounts.proposal.mint != *ctx.accounts.mint.key {
+            return Err(ErrorCode::InvalidMintAccount.into());
+        }
+        if ctx.accounts.proposal.to != *ctx.accounts.to.key {
+            return Err(ErrorCode::InvalidToAccount.into());
+        }
+
+        // Execute the mint proposal signed by the bridge.
         let amount = ctx.accounts.proposal.amount;
-
-        token::mint_to(ctx.accounts.into(), amount)?;
-
-        // Burn the proposal to ensure one time use.
+        let cpi_accounts = MintTo {
+            mint: ctx.accounts.mint.clone(),
+            to: ctx.accounts.to.clone(),
+            authority: ctx.accounts.bridge_signer.clone(),
+        };
+        msg!("222");
+        let cpi_program = ctx.accounts.token_program.clone();
+        let seeds = &[
+            ctx.accounts.bridge.to_account_info().key.as_ref(),
+            &[ctx.accounts.bridge.nonce],
+        ];
+        let signer = &[&seeds[..]];
+        let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer);
+        msg!("333");
+        token::mint_to(cpi_ctx, amount)?;
+        msg!("444");
+        // Burn the mint proposal to ensure one time use.
         ctx.accounts.proposal.did_execute = true;
 
         Ok(())
@@ -141,7 +187,7 @@ pub mod bridge {
 
     // Sets the owners field on the bridge. The only way this can be invoked
     // is via a recursive call from execute_proposal -> set_owners.
-    pub fn set_owners(ctx: Context<Auth>, owners: Vec<Pubkey>) -> Result<()> {
+    pub fn set_owners(ctx: Context<AdminAuth>, owners: Vec<Pubkey>) -> Result<()> {
         let owners_len = owners.len() as u64;
         if owners_len == 0 {
             return Err(ErrorCode::InvalidOwnerLength.into());
@@ -160,7 +206,7 @@ pub mod bridge {
     // Changes the execution threshold of the bridge. The only way this can be
     // invoked is via a recursive call from execute_proposal ->
     // change_threshold.
-    pub fn change_threshold(ctx: Context<Auth>, threshold: u64) -> Result<()> {
+    pub fn change_threshold(ctx: Context<AdminAuth>, threshold: u64) -> Result<()> {
         if threshold == 0 {
             return Err(ErrorCode::InvalidThreshold.into());
         }
@@ -173,8 +219,9 @@ pub mod bridge {
     }
 }
 
+
 #[derive(Accounts)]
-pub struct Auth<'info> {
+pub struct MultiSigAuth<'info> {
     #[account(mut)]
     bridge: ProgramAccount<'info, Bridge>,
     #[account(
@@ -183,6 +230,14 @@ pub struct Auth<'info> {
         bump = bridge.nonce,
     )]
     bridge_signer: AccountInfo<'info>,
+}
+
+#[derive(Accounts)]
+pub struct AdminAuth<'info> {
+    #[account(mut)]
+    bridge: ProgramAccount<'info, Bridge>,
+    #[account(signer, constraint = &bridge.admin == admin.key)]
+    admin: AccountInfo<'info>,
 }
 
 #[derive(Accounts)]
@@ -243,14 +298,15 @@ pub struct Approve<'info> {
 
 #[account]
 pub struct Bridge {
+    pub admin: Pubkey,
     pub owners: Vec<Pubkey>,
     pub threshold: u64,
     pub nonce: u8,
     pub owner_set_seqno: u32,
     // destinationChainID => number of deposits
     pub deposit_counts: BTreeMap<u8, u64>,
-    // resource id => token program address
-    pub resource_id_to_token_program: BTreeMap<[u8;32], Pubkey>,
+    // resource id => token mint address
+    pub resource_id_to_mint: BTreeMap<[u8;32], Pubkey>,
 }
 
 #[account]
@@ -323,19 +379,24 @@ impl<'a, 'b, 'c, 'info> From<&mut CreateDeposit<'info>> for CpiContext<'a, 'b, '
 }
 
 
-impl<'a, 'b, 'c, 'info> From<&mut Approve<'info>>
-    for CpiContext<'a, 'b, 'c, 'info, MintTo<'info>>
-{
-    fn from(accounts: &mut Approve<'info>) -> CpiContext<'a, 'b, 'c, 'info, MintTo<'info>> {
-        let cpi_accounts = MintTo {
-            mint: accounts.mint.clone(),
-            to: accounts.to.clone(),
-            authority: accounts.bridge_signer.clone(),
-        };
-        let cpi_program = accounts.token_program.clone();
-        CpiContext::new(cpi_program, cpi_accounts)
-    }
-}
+// impl<'a, 'b, 'c, 'info> From<&mut Approve<'info>>
+//     for CpiContext<'a, 'b, 'c, 'info, MintTo<'info>>
+// {
+//     fn from(accounts: &mut Approve<'info>) -> CpiContext<'a, 'b, 'c, 'info, MintTo<'info>> {
+//         let cpi_accounts = MintTo {
+//             mint: accounts.mint.clone(),
+//             to: accounts.to.clone(),
+//             authority: accounts.bridge_signer.clone(),
+//         };
+//         let cpi_program = accounts.token_program.clone();
+//         let seeds = &[
+//             accounts.bridge.to_account_info().key().as_ref(),
+//             &[accounts.bridge.nonce],
+//         ];
+//         let signer = &[&seeds[..]];
+//         CpiContext::new_with_signer(cpi_program, cpi_accounts, signer)
+//     }
+// }
 
 
 #[error]
@@ -360,4 +421,10 @@ pub enum ErrorCode {
     ParamLength,
     #[msg("chain id not found")]
     InvalidChainId,
+    #[msg("resource id not found")]
+    InvalidResourceId,
+    #[msg("mint account not match proposal's mint")]
+    InvalidMintAccount,
+    #[msg("to account not match proposal's to")]
+    InvalidToAccount,
 }
