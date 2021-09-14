@@ -16,9 +16,9 @@
 //! To sign, owners should invoke the `approve` instruction.
 
 use anchor_lang::prelude::*;
-use std::convert::Into;
-use std::collections::BTreeMap;
 use anchor_spl::token::{self, Burn, MintTo};
+use std::collections::BTreeMap;
+use std::convert::Into;
 
 declare_id!("Cqpdbx8h2uVj4s3aKHCnhTdbgxx9eRSFg3UwPE7te9M6");
 
@@ -32,7 +32,7 @@ pub mod bridge {
         owners: Vec<Pubkey>,
         threshold: u64,
         nonce: u8,
-        resource_id_to_mint: BTreeMap<[u8;32], Pubkey>,
+        resource_id_to_mint: BTreeMap<[u8; 32], Pubkey>,
         admin: Pubkey,
     ) -> Result<()> {
         let bridge = &mut ctx.accounts.bridge;
@@ -48,7 +48,7 @@ pub mod bridge {
 
     pub fn set_resource_id(
         ctx: Context<AdminAuth>,
-        resource_id: [u8;32],
+        resource_id: [u8; 32],
         mint: Pubkey,
     ) -> Result<()> {
         let bridge = &mut ctx.accounts.bridge;
@@ -62,14 +62,17 @@ pub mod bridge {
         amount: u64,
         receiver: Vec<u8>,
         dest_chain_id: u8,
-        resource_id: [u8;32],
+        resource_id: [u8; 32],
     ) -> Result<()> {
         //burn
         token::burn(ctx.accounts.into(), amount)?;
 
         let bridge_account = &mut ctx.accounts.bridge;
         let deposit_account = &mut ctx.accounts.deposit;
-        let deposit_count =  bridge_account.deposit_counts.entry(dest_chain_id).or_insert(0);
+        let deposit_count = bridge_account
+            .deposit_counts
+            .entry(dest_chain_id)
+            .or_insert(0);
 
         // update bridge deposit counts
         *deposit_count += 1;
@@ -82,11 +85,10 @@ pub mod bridge {
         Ok(())
     }
 
-    // Creates a new proposal account
-    // which must be one of the owners of the bridge.
+    // Creates a new mint proposal account
     pub fn create_mint_proposal(
         ctx: Context<CreateMintProposal>,
-        resource_id: [u8;32],
+        resource_id: [u8; 32],
         amount: u64,
         token_program: Pubkey,
     ) -> Result<()> {
@@ -103,13 +105,15 @@ pub mod bridge {
 
         let p = &mut ctx.accounts.proposal;
         let mint_op = ctx.accounts.bridge.resource_id_to_mint.get(&resource_id);
-        let mint = if let Some(m) = mint_op{
+        let mint = if let Some(m) = mint_op {
             m
-        }else{
+        } else {
             return Err(ErrorCode::InvalidResourceId.into());
         };
+
         // check token account mint info
-        if *mint != *ctx.accounts.to.key{
+        let mint_info = token::accessor::mint(&ctx.accounts.to)?;
+        if *mint != mint_info {
             return Err(ErrorCode::InvalidMintAccount.into());
         }
 
@@ -146,8 +150,8 @@ pub mod bridge {
             .iter()
             .filter(|&did_sign| *did_sign)
             .count() as u64;
-        
-            msg!("222");
+
+        msg!("222");
         if sig_count < ctx.accounts.bridge.threshold {
             return Ok(());
         }
@@ -222,7 +226,6 @@ pub mod bridge {
     }
 }
 
-
 #[derive(Accounts)]
 pub struct AdminAuth<'info> {
     #[account(mut)]
@@ -245,7 +248,7 @@ pub struct CreateDeposit<'info> {
     #[account(zero)]
     deposit: ProgramAccount<'info, Deposit>,
     #[account(signer)]
-    pub authority: AccountInfo<'info>,//token account owner
+    pub authority: AccountInfo<'info>, //token account owner
     #[account(mut)]
     pub mint: AccountInfo<'info>,
     #[account(mut)]
@@ -284,7 +287,7 @@ pub struct Approve<'info> {
 
     #[account(mut)]
     pub mint: AccountInfo<'info>,
-    // token account which has been initiated 
+    // token account which has been initiated
     #[account(mut)]
     pub to: AccountInfo<'info>,
     pub token_program: AccountInfo<'info>,
@@ -300,7 +303,7 @@ pub struct Bridge {
     // destinationChainID => number of deposits
     pub deposit_counts: BTreeMap<u8, u64>,
     // resource id => token mint address
-    pub resource_id_to_mint: BTreeMap<[u8;32], Pubkey>,
+    pub resource_id_to_mint: BTreeMap<[u8; 32], Pubkey>,
 }
 
 #[account]
@@ -309,7 +312,7 @@ pub struct Deposit {
     pub depositer: Pubkey,
     pub receiver: Vec<u8>,
     pub dest_chain_id: u8,
-    pub resource_id: [u8;32],
+    pub resource_id: [u8; 32],
     pub deposit_nonce: u64,
 }
 
@@ -359,8 +362,9 @@ impl From<&AccountMeta> for ProposalAccount {
     }
 }
 
-
-impl<'a, 'b, 'c, 'info> From<&mut CreateDeposit<'info>> for CpiContext<'a, 'b, 'c, 'info, Burn<'info>> {
+impl<'a, 'b, 'c, 'info> From<&mut CreateDeposit<'info>>
+    for CpiContext<'a, 'b, 'c, 'info, Burn<'info>>
+{
     fn from(accounts: &mut CreateDeposit<'info>) -> CpiContext<'a, 'b, 'c, 'info, Burn<'info>> {
         let cpi_accounts = Burn {
             mint: accounts.mint.clone(),
@@ -371,8 +375,6 @@ impl<'a, 'b, 'c, 'info> From<&mut CreateDeposit<'info>> for CpiContext<'a, 'b, '
         CpiContext::new(cpi_program, cpi_accounts)
     }
 }
-
-
 
 #[error]
 pub enum ErrorCode {
