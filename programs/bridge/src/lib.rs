@@ -87,7 +87,6 @@ pub mod bridge {
     pub fn create_mint_proposal(
         ctx: Context<CreateMintProposal>,
         resource_id: [u8;32],
-        to: Pubkey,
         amount: u64,
         token_program: Pubkey,
     ) -> Result<()> {
@@ -109,9 +108,13 @@ pub mod bridge {
         }else{
             return Err(ErrorCode::InvalidResourceId.into());
         };
+        // check token account mint info
+        if *mint != *ctx.accounts.to.key{
+            return Err(ErrorCode::InvalidMintAccount.into());
+        }
 
         p.mint = *mint;
-        p.to = to;
+        p.to = *ctx.accounts.to.key;
         p.amount = amount;
         p.token_program = token_program;
         p.signers = signers;
@@ -221,18 +224,6 @@ pub mod bridge {
 
 
 #[derive(Accounts)]
-pub struct MultiSigAuth<'info> {
-    #[account(mut)]
-    bridge: ProgramAccount<'info, Bridge>,
-    #[account(
-        signer, 
-        seeds = [bridge.to_account_info().key.as_ref()],
-        bump = bridge.nonce,
-    )]
-    bridge_signer: AccountInfo<'info>,
-}
-
-#[derive(Accounts)]
 pub struct AdminAuth<'info> {
     #[account(mut)]
     bridge: ProgramAccount<'info, Bridge>,
@@ -268,6 +259,8 @@ pub struct CreateMintProposal<'info> {
     bridge: ProgramAccount<'info, Bridge>,
     #[account(zero)]
     proposal: ProgramAccount<'info, MintProposal>,
+    // token account which has been initiated
+    to: AccountInfo<'info>,
     // One of the owners. Checked in the handler.
     #[account(signer)]
     proposer: AccountInfo<'info>,
@@ -291,6 +284,7 @@ pub struct Approve<'info> {
 
     #[account(mut)]
     pub mint: AccountInfo<'info>,
+    // token account which has been initiated 
     #[account(mut)]
     pub to: AccountInfo<'info>,
     pub token_program: AccountInfo<'info>,
@@ -378,25 +372,6 @@ impl<'a, 'b, 'c, 'info> From<&mut CreateDeposit<'info>> for CpiContext<'a, 'b, '
     }
 }
 
-
-// impl<'a, 'b, 'c, 'info> From<&mut Approve<'info>>
-//     for CpiContext<'a, 'b, 'c, 'info, MintTo<'info>>
-// {
-//     fn from(accounts: &mut Approve<'info>) -> CpiContext<'a, 'b, 'c, 'info, MintTo<'info>> {
-//         let cpi_accounts = MintTo {
-//             mint: accounts.mint.clone(),
-//             to: accounts.to.clone(),
-//             authority: accounts.bridge_signer.clone(),
-//         };
-//         let cpi_program = accounts.token_program.clone();
-//         let seeds = &[
-//             accounts.bridge.to_account_info().key().as_ref(),
-//             &[accounts.bridge.nonce],
-//         ];
-//         let signer = &[&seeds[..]];
-//         CpiContext::new_with_signer(cpi_program, cpi_accounts, signer)
-//     }
-// }
 
 
 #[error]
