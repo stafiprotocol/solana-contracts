@@ -18,6 +18,7 @@ pub mod bridge {
         owners: Vec<Pubkey>,
         threshold: u64,
         nonce: u8,
+        support_chain_ids: Vec<u8>,
         resource_id_to_mint: BTreeMap<[u8; 32], Pubkey>,
         admin: Pubkey,
     ) -> Result<()> {
@@ -25,6 +26,7 @@ pub mod bridge {
         bridge.owners = owners;
         bridge.threshold = threshold;
         bridge.nonce = nonce;
+        bridge.support_chain_ids = support_chain_ids;
         bridge.owner_set_seqno = 0;
         bridge.deposit_counts = BTreeMap::new();
         bridge.resource_id_to_mint = resource_id_to_mint;
@@ -42,32 +44,90 @@ pub mod bridge {
         Ok(())
     }
 
+    pub fn add_chain_id(ctx: Context<AdminAuth>, chain_id: u8) -> Result<()> {
+        if ctx.accounts.bridge.support_chain_ids.contains(&chain_id) {
+            return Err(ErrorCode::ChainIdExist.into());
+        };
+        let bridge = &mut ctx.accounts.bridge;
+        bridge.support_chain_ids.push(chain_id);
+
+        Ok(())
+    }
+
+    pub fn rm_chain_id(ctx: Context<AdminAuth>, chain_id: u8) -> Result<()> {
+        let index = ctx
+            .accounts
+            .bridge
+            .support_chain_ids
+            .iter()
+            .position(|a| *a == chain_id)
+            .ok_or(ErrorCode::ChainIdNotExist)?;
+
+        let bridge = &mut ctx.accounts.bridge;
+        bridge.support_chain_ids.remove(index);
+
+        Ok(())
+    }
+
     // Initiates a transfer by creating a deposit account
-    pub fn burn_and_create_deposit(
-        ctx: Context<CreateDeposit>,
+    pub fn transfer_out(
+        ctx: Context<TransferOut>,
         amount: u64,
         receiver: Vec<u8>,
         dest_chain_id: u8,
-        resource_id: [u8; 32],
+        expect_mint: Pubkey,
     ) -> Result<()> {
+        msg!("transfer out");
+        //check mint
+        let mint_of_from = token::accessor::mint(&ctx.accounts.from)?;
+        if mint_of_from != expect_mint {
+            return Err(ErrorCode::InvalidFromAccount.into());
+        }
+
+        //check resource id
+        let mut resource_id_opt: Option<[u8; 32]> = None;
+        for (id, mint) in ctx.accounts.bridge.resource_id_to_mint.iter() {
+            if *mint == mint_of_from {
+                resource_id_opt = Some(*id);
+            }
+        }
+        let resource_id = if let Some(id) = resource_id_opt {
+            id
+        } else {
+            return Err(ErrorCode::NotSupportMintType.into());
+        };
+
+        //check dest chain id is support
+        if !ctx
+            .accounts
+            .bridge
+            .support_chain_ids
+            .contains(&dest_chain_id)
+        {
+            return Err(ErrorCode::NotSupportChainId.into());
+        };
+
         //burn
         token::burn(ctx.accounts.into(), amount)?;
 
+        // update bridge deposit counts
         let bridge_account = &mut ctx.accounts.bridge;
-        let deposit_account = &mut ctx.accounts.deposit;
         let deposit_count = bridge_account
             .deposit_counts
             .entry(dest_chain_id)
             .or_insert(0);
-
-        // update bridge deposit counts
         *deposit_count += 1;
-        // update deposit
-        deposit_account.amount = amount;
-        deposit_account.receiver = receiver;
-        deposit_account.dest_chain_id = dest_chain_id;
-        deposit_account.resource_id = resource_id;
-        deposit_account.deposit_nonce = *deposit_count;
+
+        // emit log data
+        emit!(EventTransferOut {
+            transfer: *ctx.accounts.from.key,
+            receiver: receiver,
+            amount: amount,
+            dest_chain_id: dest_chain_id,
+            resource_id: resource_id,
+            deposit_nonce: *deposit_count,
+        });
+        msg!("transfer out ok");
         Ok(())
     }
 
@@ -117,7 +177,7 @@ pub mod bridge {
 
     // Approve and Executes the given proposal if threshold owners have signed it.
     pub fn approve_mint_proposal(ctx: Context<Approve>) -> Result<()> {
-        msg!("000");
+        msg!("approve_mint_proposal");
         let owner_index = ctx
             .accounts
             .bridge
@@ -127,7 +187,6 @@ pub mod bridge {
             .ok_or(ErrorCode::InvalidOwner)?;
 
         ctx.accounts.proposal.signers[owner_index] = true;
-        msg!("111");
         // Do we have enough signers.
         let sig_count = ctx
             .accounts
@@ -137,13 +196,14 @@ pub mod bridge {
             .filter(|&did_sign| *did_sign)
             .count() as u64;
 
-        msg!("222");
         if sig_count < ctx.accounts.bridge.threshold {
+            msg!("approve ok but not execute");
             return Ok(());
         }
 
         // Has this been executed already?
         if ctx.accounts.proposal.did_execute {
+            msg!("proposal already executed err");
             return Err(ErrorCode::AlreadyExecuted.into());
         }
 
@@ -161,7 +221,6 @@ pub mod bridge {
             to: ctx.accounts.to.clone(),
             authority: ctx.accounts.bridge_signer.clone(),
         };
-        msg!("222");
         let cpi_program = ctx.accounts.token_program.clone();
         let seeds = &[
             ctx.accounts.bridge.to_account_info().key.as_ref(),
@@ -169,16 +228,14 @@ pub mod bridge {
         ];
         let signer = &[&seeds[..]];
         let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer);
-        msg!("333");
         token::mint_to(cpi_ctx, amount)?;
-        msg!("444");
         // Burn the mint proposal to ensure one time use.
         ctx.accounts.proposal.did_execute = true;
-
+        msg!("approve and execute proposal ok");
         Ok(())
     }
 
-    // Sets the owners field on the bridge. 
+    // Sets the owners field on the bridge.
     pub fn set_owners(ctx: Context<AdminAuth>, owners: Vec<Pubkey>) -> Result<()> {
         let owners_len = owners.len() as u64;
         if owners_len == 0 {

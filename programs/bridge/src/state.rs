@@ -19,13 +19,12 @@ pub struct CreateBridge<'info> {
 }
 
 #[derive(Accounts)]
-pub struct CreateDeposit<'info> {
+pub struct TransferOut<'info> {
     #[account(mut)]
     pub bridge: ProgramAccount<'info, Bridge>,
-    #[account(zero)]
-    pub deposit: ProgramAccount<'info, Deposit>,
+    //token account's owner
     #[account(signer)]
-    pub authority: AccountInfo<'info>, //token account owner
+    pub authority: AccountInfo<'info>,
     #[account(mut)]
     pub mint: AccountInfo<'info>,
     #[account(mut)]
@@ -77,17 +76,18 @@ pub struct Bridge {
     pub threshold: u64,
     pub nonce: u8,
     pub owner_set_seqno: u32,
+    pub support_chain_ids: Vec<u8>,
     // destinationChainID => number of deposits
     pub deposit_counts: BTreeMap<u8, u64>,
     // resource id => token mint address
     pub resource_id_to_mint: BTreeMap<[u8; 32], Pubkey>,
 }
 
-#[account]
-pub struct Deposit {
-    pub amount: u64,
-    pub depositer: Pubkey,
+#[event]
+pub struct EventTransferOut {
+    pub transfer: Pubkey,
     pub receiver: Vec<u8>,
+    pub amount: u64,
     pub dest_chain_id: u8,
     pub resource_id: [u8; 32],
     pub deposit_nonce: u64,
@@ -139,10 +139,10 @@ impl From<&AccountMeta> for ProposalAccount {
     }
 }
 
-impl<'a, 'b, 'c, 'info> From<&mut CreateDeposit<'info>>
+impl<'a, 'b, 'c, 'info> From<&mut TransferOut<'info>>
     for CpiContext<'a, 'b, 'c, 'info, Burn<'info>>
 {
-    fn from(accounts: &mut CreateDeposit<'info>) -> CpiContext<'a, 'b, 'c, 'info, Burn<'info>> {
+    fn from(accounts: &mut TransferOut<'info>) -> CpiContext<'a, 'b, 'c, 'info, Burn<'info>> {
         let cpi_accounts = Burn {
             mint: accounts.mint.clone(),
             to: accounts.from.clone(),
@@ -173,12 +173,20 @@ pub enum ErrorCode {
     InvalidThreshold,
     #[msg("program id account data must have same length")]
     ParamLength,
-    #[msg("chain id not found")]
-    InvalidChainId,
+    #[msg("chain id not support")]
+    NotSupportChainId,
+    #[msg("chain id exist")]
+    ChainIdExist,
+    #[msg("chain id not exist")]
+    ChainIdNotExist,
     #[msg("resource id not found")]
     InvalidResourceId,
     #[msg("mint account not match proposal's mint")]
     InvalidMintAccount,
     #[msg("to account not match proposal's to")]
     InvalidToAccount,
+    #[msg("from account invalid")]
+    InvalidFromAccount,
+    #[msg("not support mint type")]
+    NotSupportMintType,
 }
