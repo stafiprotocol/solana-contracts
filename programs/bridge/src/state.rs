@@ -30,7 +30,6 @@ pub struct TransferOut<'info> {
     #[account(mut)]
     pub from: AccountInfo<'info>,
     pub token_program: AccountInfo<'info>,
-    pub rent: Sysvar<'info, Rent>,
 }
 
 #[derive(Accounts)]

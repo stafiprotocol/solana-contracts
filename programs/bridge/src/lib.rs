@@ -22,6 +22,7 @@ pub mod bridge {
         resource_id_to_mint: BTreeMap<[u8; 32], Pubkey>,
         admin: Pubkey,
     ) -> Result<()> {
+        msg!("stafi: create bridge");
         let bridge = &mut ctx.accounts.bridge;
         bridge.owners = owners;
         bridge.threshold = threshold;
@@ -31,6 +32,7 @@ pub mod bridge {
         bridge.deposit_counts = BTreeMap::new();
         bridge.resource_id_to_mint = resource_id_to_mint;
         bridge.admin = admin;
+        msg!("stafi: create bridge ok");
         Ok(())
     }
 
@@ -75,12 +77,11 @@ pub mod bridge {
         amount: u64,
         receiver: Vec<u8>,
         dest_chain_id: u8,
-        expect_mint: Pubkey,
     ) -> Result<()> {
-        msg!("transfer out");
+        msg!("stafi: transfer out");
         //check mint
         let mint_of_from = token::accessor::mint(&ctx.accounts.from)?;
-        if mint_of_from != expect_mint {
+        if mint_of_from != *ctx.accounts.mint.key {
             return Err(ErrorCode::InvalidFromAccount.into());
         }
 
@@ -127,7 +128,7 @@ pub mod bridge {
             resource_id: resource_id,
             deposit_nonce: *deposit_count,
         });
-        msg!("transfer out ok");
+        msg!("stafi: transfer out ok");
         Ok(())
     }
 
@@ -138,6 +139,7 @@ pub mod bridge {
         amount: u64,
         token_program: Pubkey,
     ) -> Result<()> {
+        msg!("stafi: create mint proposal");
         let _ = ctx
             .accounts
             .bridge
@@ -171,13 +173,13 @@ pub mod bridge {
         p.bridge = *ctx.accounts.bridge.to_account_info().key;
         p.did_execute = false;
         p.owner_set_seqno = ctx.accounts.bridge.owner_set_seqno;
-
+        msg!("stafi: create mint proposal ok");
         Ok(())
     }
 
     // Approve and Executes the given proposal if threshold owners have signed it.
     pub fn approve_mint_proposal(ctx: Context<Approve>) -> Result<()> {
-        msg!("approve_mint_proposal");
+        msg!("stafi: approve_mint_proposal");
         let owner_index = ctx
             .accounts
             .bridge
@@ -197,13 +199,13 @@ pub mod bridge {
             .count() as u64;
 
         if sig_count < ctx.accounts.bridge.threshold {
-            msg!("approve ok but not execute");
+            msg!("stafi: approve ok but not execute");
             return Ok(());
         }
 
         // Has this been executed already?
         if ctx.accounts.proposal.did_execute {
-            msg!("proposal already executed err");
+            msg!("stafi: proposal already executed err");
             return Err(ErrorCode::AlreadyExecuted.into());
         }
 
@@ -231,7 +233,7 @@ pub mod bridge {
         token::mint_to(cpi_ctx, amount)?;
         // Burn the mint proposal to ensure one time use.
         ctx.accounts.proposal.did_execute = true;
-        msg!("approve and execute proposal ok");
+        msg!("stafi: approve and execute proposal ok");
         Ok(())
     }
 
