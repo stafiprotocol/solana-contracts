@@ -46,28 +46,9 @@ pub mod bridge {
         Ok(())
     }
 
-    pub fn add_chain_id(ctx: Context<AdminAuth>, chain_id: u8) -> Result<()> {
-        if ctx.accounts.bridge.support_chain_ids.contains(&chain_id) {
-            return Err(ErrorCode::ChainIdExist.into());
-        };
+    pub fn set_support_chain_ids(ctx: Context<AdminAuth>, chain_ids: Vec<u8>) -> Result<()> {
         let bridge = &mut ctx.accounts.bridge;
-        bridge.support_chain_ids.push(chain_id);
-
-        Ok(())
-    }
-
-    pub fn rm_chain_id(ctx: Context<AdminAuth>, chain_id: u8) -> Result<()> {
-        let index = ctx
-            .accounts
-            .bridge
-            .support_chain_ids
-            .iter()
-            .position(|a| *a == chain_id)
-            .ok_or(ErrorCode::ChainIdNotExist)?;
-
-        let bridge = &mut ctx.accounts.bridge;
-        bridge.support_chain_ids.remove(index);
-
+        bridge.support_chain_ids = chain_ids;
         Ok(())
     }
 
