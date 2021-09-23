@@ -23,13 +23,16 @@ pub struct TransferOut<'info> {
     #[account(mut)]
     pub bridge: ProgramAccount<'info, Bridge>,
     //token account's owner
-    #[account(signer)]
+    #[account(signer, mut)]
     pub authority: AccountInfo<'info>,
     #[account(mut)]
     pub mint: AccountInfo<'info>,
     #[account(mut)]
     pub from: AccountInfo<'info>,
+    #[account(mut)]
+    pub fee_receiver: AccountInfo<'info>,
     pub token_program: AccountInfo<'info>,
+    pub system_program: AccountInfo<'info>,
 }
 
 #[derive(Accounts)]
@@ -80,6 +83,9 @@ pub struct Bridge {
     pub deposit_counts: BTreeMap<u8, u64>,
     // resource id => token mint address
     pub resource_id_to_mint: BTreeMap<[u8; 32], Pubkey>,
+    pub fee_receiver: Pubkey,
+    // destinationChainID => fee amount of sol
+    pub fee_amounts: BTreeMap<u8, u64>,
 }
 
 #[event]
@@ -186,6 +192,8 @@ pub enum ErrorCode {
     InvalidToAccount,
     #[msg("from account invalid")]
     InvalidFromAccount,
+    #[msg("invalid fee receiver")]
+    InvalidFeeReceiver,
     #[msg("not support mint type")]
     NotSupportMintType,
 }

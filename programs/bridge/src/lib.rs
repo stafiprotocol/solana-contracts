@@ -21,6 +21,8 @@ pub mod bridge {
         support_chain_ids: Vec<u8>,
         resource_id_to_mint: BTreeMap<[u8; 32], Pubkey>,
         admin: Pubkey,
+        fee_receiver: Pubkey,
+        fee_amounts: BTreeMap<u8, u64>,
     ) -> Result<()> {
         msg!("stafi: create bridge");
         let bridge = &mut ctx.accounts.bridge;
@@ -32,6 +34,8 @@ pub mod bridge {
         bridge.deposit_counts = BTreeMap::new();
         bridge.resource_id_to_mint = resource_id_to_mint;
         bridge.admin = admin;
+        bridge.fee_receiver = fee_receiver;
+        bridge.fee_amounts = fee_amounts;
         msg!("stafi: create bridge ok");
         Ok(())
     }
@@ -49,6 +53,48 @@ pub mod bridge {
     pub fn set_support_chain_ids(ctx: Context<AdminAuth>, chain_ids: Vec<u8>) -> Result<()> {
         let bridge = &mut ctx.accounts.bridge;
         bridge.support_chain_ids = chain_ids;
+        Ok(())
+    }
+
+    pub fn set_fee_receiver(ctx: Context<AdminAuth>, fee_receiver: Pubkey) -> Result<()> {
+        let bridge = &mut ctx.accounts.bridge;
+        bridge.fee_receiver = fee_receiver;
+        Ok(())
+    }
+
+    pub fn set_fee_amount(ctx: Context<AdminAuth>, dest_chain_id: u8, amount: u64) -> Result<()> {
+        let bridge = &mut ctx.accounts.bridge;
+        bridge.fee_amounts.insert(dest_chain_id, amount);
+        Ok(())
+    }
+
+    // Sets the owners field on the bridge.
+    pub fn set_owners(ctx: Context<AdminAuth>, owners: Vec<Pubkey>) -> Result<()> {
+        let owners_len = owners.len() as u64;
+        if owners_len == 0 {
+            return Err(ErrorCode::InvalidOwnerLength.into());
+        }
+
+        let bridge = &mut ctx.accounts.bridge;
+        if owners_len < bridge.threshold {
+            bridge.threshold = owners_len;
+        }
+
+        bridge.owners = owners;
+        bridge.owner_set_seqno += 1;
+        Ok(())
+    }
+
+    // change_threshold.
+    pub fn change_threshold(ctx: Context<AdminAuth>, threshold: u64) -> Result<()> {
+        if threshold == 0 {
+            return Err(ErrorCode::InvalidThreshold.into());
+        }
+        if threshold > ctx.accounts.bridge.owners.len() as u64 {
+            return Err(ErrorCode::InvalidThreshold.into());
+        }
+        let bridge = &mut ctx.accounts.bridge;
+        bridge.threshold = threshold;
         Ok(())
     }
 
@@ -89,7 +135,31 @@ pub mod bridge {
             return Err(ErrorCode::NotSupportChainId.into());
         };
 
-        //burn
+        //check fee receiver
+        if *ctx.accounts.fee_receiver.key != ctx.accounts.bridge.fee_receiver {
+            return Err(ErrorCode::InvalidFeeReceiver.into());
+        }
+        let fee = if let Some(f) = ctx.accounts.bridge.fee_amounts.get(&dest_chain_id) {
+            *f
+        } else {
+            0
+        };
+        if fee > 0 {
+            // pay fee
+            anchor_lang::solana_program::program::invoke(
+                &anchor_lang::solana_program::system_instruction::transfer(
+                    &ctx.accounts.authority.key(),
+                    &ctx.accounts.fee_receiver.key(),
+                    50000,
+                ),
+                &[
+                    ctx.accounts.authority.clone(),
+                    ctx.accounts.fee_receiver.clone(),
+                    ctx.accounts.system_program.clone(),
+                ],
+            )?;
+        }
+        //burn token of from account
         token::burn(ctx.accounts.into(), amount)?;
 
         // update bridge deposit counts
@@ -215,36 +285,6 @@ pub mod bridge {
         // Burn the mint proposal to ensure one time use.
         ctx.accounts.proposal.did_execute = true;
         msg!("stafi: approve and execute proposal ok");
-        Ok(())
-    }
-
-    // Sets the owners field on the bridge.
-    pub fn set_owners(ctx: Context<AdminAuth>, owners: Vec<Pubkey>) -> Result<()> {
-        let owners_len = owners.len() as u64;
-        if owners_len == 0 {
-            return Err(ErrorCode::InvalidOwnerLength.into());
-        }
-
-        let bridge = &mut ctx.accounts.bridge;
-        if owners_len < bridge.threshold {
-            bridge.threshold = owners_len;
-        }
-
-        bridge.owners = owners;
-        bridge.owner_set_seqno += 1;
-        Ok(())
-    }
-
-    // change_threshold.
-    pub fn change_threshold(ctx: Context<AdminAuth>, threshold: u64) -> Result<()> {
-        if threshold == 0 {
-            return Err(ErrorCode::InvalidThreshold.into());
-        }
-        if threshold > ctx.accounts.bridge.owners.len() as u64 {
-            return Err(ErrorCode::InvalidThreshold.into());
-        }
-        let bridge = &mut ctx.accounts.bridge;
-        bridge.threshold = threshold;
         Ok(())
     }
 }
