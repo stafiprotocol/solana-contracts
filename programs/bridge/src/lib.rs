@@ -150,7 +150,7 @@ pub mod bridge {
                 &anchor_lang::solana_program::system_instruction::transfer(
                     &ctx.accounts.authority.key(),
                     &ctx.accounts.fee_receiver.key(),
-                    50000,
+                    fee,
                 ),
                 &[
                     ctx.accounts.authority.clone(),
