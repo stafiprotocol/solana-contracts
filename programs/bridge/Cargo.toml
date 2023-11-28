@@ -1,8 +1,8 @@
 [package]
 name = "bridge"
-version = "0.1.0"
-description = "Created with Anchor"
-edition = "2018"
+version = "0.2.0"
+description = "Stafi bridge on solana"
+edition = "2021"
 
 [lib]
 crate-type = ["cdylib", "lib"]
@@ -15,6 +15,6 @@ cpi = ["no-entrypoint"]
 default = []
 
 [dependencies]
-anchor-lang = "0.15.0"
-anchor-spl = "0.15.0"
-spl-token = { version = "3.2.0", features = ["no-entrypoint"] }
+anchor-lang = "0.29.0"
+anchor-spl = "0.29.0"
+spl-token = { version = "4.0.0", features = ["no-entrypoint"] }

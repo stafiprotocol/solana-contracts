@@ -1,4 +1,16 @@
-anchor_version = "0.15.0"
+[toolchain]
+anchor_version = "0.29.0"
+solana_version = "1.16.20"
+
+[features]
+seeds = false
+skip-lint = false
+
+[programs.localnet]
+sol_lsd_programs = "47pM7t6NrHmmrkrnnpr1FfVYNHCohVsStaAsdaqYsxEV"
+
+[registry]
+url = "https://api.apr.dev"
 
 [provider]
 cluster = "https://api.devnet.solana.com"

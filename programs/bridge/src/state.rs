@@ -6,7 +6,9 @@ use std::convert::Into;
 #[derive(Accounts)]
 pub struct AdminAuth<'info> {
     #[account(mut)]
-    pub bridge: ProgramAccount<'info, Bridge>,
+    pub bridge: Box<Account<'info, Bridge>>,
+
+    /// CHECK: old version
     #[account(signer, constraint = &bridge.admin == admin.key)]
     pub admin: AccountInfo<'info>,
 }
@@ -14,35 +16,50 @@ pub struct AdminAuth<'info> {
 #[derive(Accounts)]
 pub struct CreateBridge<'info> {
     #[account(zero)]
-    pub bridge: ProgramAccount<'info, Bridge>,
+    pub bridge: Box<Account<'info, Bridge>>,
     pub rent: Sysvar<'info, Rent>,
 }
 
 #[derive(Accounts)]
 pub struct TransferOut<'info> {
     #[account(mut)]
-    pub bridge: ProgramAccount<'info, Bridge>,
+    pub bridge: Box<Account<'info, Bridge>>,
     //token account's owner
+    /// CHECK: old version
     #[account(signer, mut)]
     pub authority: AccountInfo<'info>,
+
+    /// CHECK: old version
     #[account(mut)]
     pub mint: AccountInfo<'info>,
+
+    /// CHECK: old version
     #[account(mut)]
     pub from: AccountInfo<'info>,
+
+    /// CHECK: old version
     #[account(mut)]
     pub fee_receiver: AccountInfo<'info>,
+
+    /// CHECK: old version
     pub token_program: AccountInfo<'info>,
+
+    /// CHECK: old version
     pub system_program: AccountInfo<'info>,
 }
 
 #[derive(Accounts)]
 pub struct CreateMintProposal<'info> {
-    pub bridge: ProgramAccount<'info, Bridge>,
+    pub bridge: Box<Account<'info, Bridge>>,
     #[account(zero)]
-    pub proposal: ProgramAccount<'info, MintProposal>,
+    pub proposal: Box<Account<'info, MintProposal>>,
+
     // token account which has been initiated
+    /// CHECK: old version
     pub to: AccountInfo<'info>,
+
     // One of the owners. Checked in the handler.
+    /// CHECK: old version
     #[account(signer)]
     pub proposer: AccountInfo<'info>,
     pub rent: Sysvar<'info, Rent>,
@@ -51,23 +68,32 @@ pub struct CreateMintProposal<'info> {
 #[derive(Accounts)]
 pub struct Approve<'info> {
     #[account(constraint = bridge.owner_set_seqno == proposal.owner_set_seqno)]
-    pub bridge: ProgramAccount<'info, Bridge>,
+    pub bridge: Box<Account<'info, Bridge>>,
+
+    /// CHECK: old version
     #[account(
         seeds = [bridge.to_account_info().key.as_ref()],
         bump = bridge.nonce,
     )]
     pub bridge_signer: AccountInfo<'info>,
     #[account(mut, has_one = bridge)]
-    pub proposal: ProgramAccount<'info, MintProposal>,
+    pub proposal: Box<Account<'info, MintProposal>>,
+
     // One of the bridge owners. Checked in the handler.
+    /// CHECK: old version
     #[account(signer)]
     pub approver: AccountInfo<'info>,
 
+    /// CHECK: old version
     #[account(mut)]
     pub mint: AccountInfo<'info>,
+
     // token account which has been initiated
+    /// CHECK: old version
     #[account(mut)]
     pub to: AccountInfo<'info>,
+
+    /// CHECK: old version
     pub token_program: AccountInfo<'info>,
 }
 
@@ -150,7 +176,7 @@ impl<'a, 'b, 'c, 'info> From<&mut TransferOut<'info>>
     fn from(accounts: &mut TransferOut<'info>) -> CpiContext<'a, 'b, 'c, 'info, Burn<'info>> {
         let cpi_accounts = Burn {
             mint: accounts.mint.clone(),
-            to: accounts.from.clone(),
+            from: accounts.from.clone(),
             authority: accounts.authority.clone(),
         };
         let cpi_program = accounts.token_program.clone();
@@ -158,8 +184,8 @@ impl<'a, 'b, 'c, 'info> From<&mut TransferOut<'info>>
     }
 }
 
-#[error]
-pub enum ErrorCode {
+#[error_code]
+pub enum Errors {
     #[msg("The given owner is not part of this bridge.")]
     InvalidOwner,
     #[msg("The given owners is empty.")]

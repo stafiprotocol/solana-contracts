@@ -7,7 +7,7 @@ use std::convert::Into;
 mod state;
 pub use crate::state::*;
 
-declare_id!("Cqpdbx8h2uVj4s3aKHCnhTdbgxx9eRSFg3UwPE7te9M6");
+declare_id!("H3mPx8i41Zn4dLC6ZQRBzNRe1cqYdbcDP1WpojnaiAVo");
 
 #[program]
 pub mod bridge {
@@ -72,7 +72,7 @@ pub mod bridge {
     pub fn set_owners(ctx: Context<AdminAuth>, owners: Vec<Pubkey>) -> Result<()> {
         let owners_len = owners.len() as u64;
         if owners_len == 0 {
-            return Err(ErrorCode::InvalidOwnerLength.into());
+            return err!(Errors::InvalidOwnerLength);
         }
 
         let bridge = &mut ctx.accounts.bridge;
@@ -88,10 +88,10 @@ pub mod bridge {
     // change_threshold.
     pub fn change_threshold(ctx: Context<AdminAuth>, threshold: u64) -> Result<()> {
         if threshold == 0 {
-            return Err(ErrorCode::InvalidThreshold.into());
+            return err!(Errors::InvalidThreshold);
         }
         if threshold > ctx.accounts.bridge.owners.len() as u64 {
-            return Err(ErrorCode::InvalidThreshold.into());
+            return err!(Errors::InvalidThreshold);
         }
         let bridge = &mut ctx.accounts.bridge;
         bridge.threshold = threshold;
@@ -109,7 +109,7 @@ pub mod bridge {
         //check mint
         let mint_of_from = token::accessor::mint(&ctx.accounts.from)?;
         if mint_of_from != *ctx.accounts.mint.key {
-            return Err(ErrorCode::InvalidFromAccount.into());
+            return err!(Errors::InvalidFromAccount);
         }
 
         //check resource id
@@ -122,7 +122,7 @@ pub mod bridge {
         let resource_id = if let Some(id) = resource_id_opt {
             id
         } else {
-            return Err(ErrorCode::NotSupportMintType.into());
+            return err!(Errors::NotSupportMintType);
         };
 
         //check dest chain id is support
@@ -132,12 +132,12 @@ pub mod bridge {
             .support_chain_ids
             .contains(&dest_chain_id)
         {
-            return Err(ErrorCode::NotSupportChainId.into());
+            return err!(Errors::NotSupportChainId);
         };
 
         //check fee receiver
         if *ctx.accounts.fee_receiver.key != ctx.accounts.bridge.fee_receiver {
-            return Err(ErrorCode::InvalidFeeReceiver.into());
+            return err!(Errors::InvalidFeeReceiver);
         }
         let fee = if let Some(f) = ctx.accounts.bridge.fee_amounts.get(&dest_chain_id) {
             *f
@@ -197,7 +197,7 @@ pub mod bridge {
             .owners
             .iter()
             .position(|a| a == ctx.accounts.proposer.key)
-            .ok_or(ErrorCode::InvalidOwner)?;
+            .ok_or(Errors::InvalidOwner)?;
 
         let mut signers = Vec::new();
         signers.resize(ctx.accounts.bridge.owners.len(), false);
@@ -207,13 +207,13 @@ pub mod bridge {
         let mint = if let Some(m) = mint_op {
             m
         } else {
-            return Err(ErrorCode::InvalidResourceId.into());
+            return err!(Errors::InvalidResourceId);
         };
 
         // check token account mint info
         let mint_info = token::accessor::mint(&ctx.accounts.to)?;
         if *mint != mint_info {
-            return Err(ErrorCode::InvalidMintAccount.into());
+            return err!(Errors::InvalidMintAccount);
         }
 
         p.mint = *mint;
@@ -237,7 +237,7 @@ pub mod bridge {
             .owners
             .iter()
             .position(|a| a == ctx.accounts.approver.key)
-            .ok_or(ErrorCode::InvalidOwner)?;
+            .ok_or(Errors::InvalidOwner)?;
 
         ctx.accounts.proposal.signers[owner_index] = true;
         // Do we have enough signers.
@@ -257,14 +257,14 @@ pub mod bridge {
         // Has this been executed already?
         if ctx.accounts.proposal.did_execute {
             msg!("stafi: proposal already executed err");
-            return Err(ErrorCode::AlreadyExecuted.into());
+            return err!(Errors::AlreadyExecuted);
         }
 
         if ctx.accounts.proposal.mint != *ctx.accounts.mint.key {
-            return Err(ErrorCode::InvalidMintAccount.into());
+            return err!(Errors::InvalidMintAccount);
         }
         if ctx.accounts.proposal.to != *ctx.accounts.to.key {
-            return Err(ErrorCode::InvalidToAccount.into());
+            return err!(Errors::InvalidToAccount);
         }
 
         // Execute the mint proposal signed by the bridge.
