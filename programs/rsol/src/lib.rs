@@ -1,4 +1,4 @@
-use anchor_lang::prelude::*;
+use anchor_lang::{prelude::*, Bumps};
 
 pub mod admin;
 pub mod errors;
@@ -12,7 +12,7 @@ pub use crate::states::*;
 
 declare_id!("47pM7t6NrHmmrkrnnpr1FfVYNHCohVsStaAsdaqYsxEV");
 
-fn check_context<T>(ctx: &Context<T>) -> Result<()> {
+fn check_context<T: Bumps>(ctx: &Context<T>) -> Result<()> {
     if !check_id(ctx.program_id) {
         return err!(Errors::ProgramIdNotMatch);
     }
@@ -36,8 +36,8 @@ pub mod rsol {
 
         ctx.accounts.process(
             initialize_data,
-            *ctx.bumps.get("stake_pool").unwrap(),
-            *ctx.bumps.get("fee_recipient").unwrap(),
+            ctx.bumps.stake_pool,
+            ctx.bumps.fee_recipient,
         )?;
 
         Ok(())
