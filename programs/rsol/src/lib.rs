@@ -1,23 +1,24 @@
-use anchor_lang::{prelude::*, Bumps};
+use anchor_lang::prelude::*;
 
 pub mod admin;
 pub mod errors;
 pub mod initialize;
 pub mod states;
 
-pub use crate::errors::Error;
+pub use crate::admin::*;
+pub use crate::errors::Errors;
 pub use crate::initialize::*;
 pub use crate::states::*;
 
 declare_id!("47pM7t6NrHmmrkrnnpr1FfVYNHCohVsStaAsdaqYsxEV");
 
-fn check_context<T: Bumps>(ctx: &Context<T>) -> Result<()> {
+fn check_context<T>(ctx: &Context<T>) -> Result<()> {
     if !check_id(ctx.program_id) {
-        return err!(Error::ProgramIdNotMatch);
+        return err!(Errors::ProgramIdNotMatch);
     }
 
     if !ctx.remaining_accounts.is_empty() {
-        return err!(Error::RemainingAccountsNotMatch);
+        return err!(Errors::RemainingAccountsNotMatch);
     }
 
     Ok(())
@@ -25,30 +26,37 @@ fn check_context<T: Bumps>(ctx: &Context<T>) -> Result<()> {
 
 #[program]
 pub mod rsol {
+
     use super::*;
 
-    pub fn initialize(
-        ctx: Context<Initialize>,
-        admin: Pubkey,
-        rsol_mint: Pubkey,
-        validator: Pubkey,
-        min_stake_amount: u64,
-        unstake_fee_commission: u64,
-        protocol_fee_commission: u64,
-        rate_change_limit: u64,
-    ) -> Result<()> {
+    // initialize
+
+    pub fn initialize(ctx: Context<Initialize>, initialize_data: InitializeData) -> Result<()> {
         check_context(&ctx)?;
 
         ctx.accounts.process(
-            admin,
-            rsol_mint,
-            validator,
-            min_stake_amount,
-            unstake_fee_commission,
-            protocol_fee_commission,
-            rate_change_limit,
-            ctx.bumps.stake_pool,
+            initialize_data,
+            *ctx.bumps.get("stake_pool").unwrap(),
+            *ctx.bumps.get("fee_recipient").unwrap(),
         )?;
+
+        Ok(())
+    }
+
+    pub fn migrate_stake_account(ctx: Context<MigrateStakeAccount>) -> Result<()> {
+        check_context(&ctx)?;
+
+        ctx.accounts.process()?;
+
+        Ok(())
+    }
+
+    // admin
+
+    pub fn transfer_admin(ctx: Context<TransferAdmin>, new_admin: Pubkey) -> Result<()> {
+        check_context(&ctx)?;
+
+        ctx.accounts.process(new_admin)?;
 
         Ok(())
     }
