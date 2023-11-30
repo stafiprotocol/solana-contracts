@@ -29,7 +29,7 @@ pub struct PoolInfo {
     pub bond: u64,
     pub unbond: u64,
     pub active: u64,
-    pub validator: Vec<Pubkey>,
+    pub validators: Vec<Pubkey>,
     pub stake_accounts: Vec<Pubkey>,
     pub split_accounts: Vec<Pubkey>,
 }

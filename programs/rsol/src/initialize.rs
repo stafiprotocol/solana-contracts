@@ -1,9 +1,12 @@
+use anchor_lang::solana_program::stake::instruction::LockupArgs;
+use anchor_lang::solana_program::{program::invoke, stake, stake::state::StakeAuthorize};
 use anchor_lang::{prelude::*, solana_program::program_pack::Pack};
-use anchor_spl::stake::StakeAccount;
+use anchor_spl::stake::{Stake, StakeAccount};
 use anchor_spl::token::{spl_token, Mint};
 use std::collections::BTreeMap;
 
-use crate::{PoolInfo, StakeManager};
+pub use crate::errors::Errors;
+pub use crate::{PoolInfo, StakeManager};
 
 #[derive(Accounts)]
 pub struct Initialize<'info> {
@@ -78,7 +81,7 @@ impl<'info> Initialize<'info> {
                 bond: initialize_data.bond,
                 unbond: initialize_data.unbond,
                 active: initialize_data.active,
-                validator: vec![initialize_data.validator],
+                validators: vec![initialize_data.validator],
                 stake_accounts: vec![],
                 split_accounts: vec![],
             },
@@ -114,10 +117,105 @@ pub struct MigrateStakeAccount<'info> {
     #[account(mut)]
     pub stake_account: Box<Account<'info, StakeAccount>>,
     pub stake_authority: Signer<'info>,
+
+    pub stake_program: Program<'info, Stake>,
+    pub clock: Sysvar<'info, Clock>,
 }
 
 impl<'info> MigrateStakeAccount<'info> {
-    pub fn process(&mut self) -> Result<()> {
+    pub fn process(&mut self, target_pool: Pubkey) -> Result<()> {
+        let delegation = self
+            .stake_account
+            .delegation()
+            .ok_or_else(|| error!(Errors::DelegationEmpty))?;
+
+        require_gte!(
+            delegation.stake,
+            self.stake_manager.min_stake_amount,
+            Errors::StakeAmountTooLow
+        );
+
+        require_eq!(
+            delegation.deactivation_epoch,
+            std::u64::MAX,
+            Errors::StakeAccountNotActive
+        );
+
+        let pool = self
+            .stake_manager
+            .bonded_pools
+            .get_mut(&target_pool)
+            .ok_or_else(|| error!(Errors::PoolNotExist))?;
+
+        if !pool.validators.contains(&delegation.voter_pubkey) {
+            return err!(Errors::ValidatorNotExist);
+        }
+        if pool.stake_accounts.contains(&self.stake_account.key()) {
+            return err!(Errors::StakeAccountAlreadyExist);
+        }
+
+        let lockup = self.stake_account.lockup().unwrap();
+        if lockup.is_in_force(&self.clock, None) {
+            return err!(Errors::StakeAccountWithLockup);
+        }
+
+        // clean old lockup
+        if lockup.custodian != Pubkey::default() {
+            invoke(
+                &stake::instruction::set_lockup(
+                    &self.stake_account.key(),
+                    &LockupArgs {
+                        unix_timestamp: Some(0),
+                        epoch: Some(0),
+                        custodian: Some(Pubkey::default()),
+                    },
+                    self.stake_authority.key,
+                ),
+                &[
+                    self.stake_program.to_account_info(),
+                    self.stake_account.to_account_info(),
+                    self.stake_authority.to_account_info(),
+                ],
+            )?;
+        }
+
+        // change new staker to target pool
+        invoke(
+            &stake::instruction::authorize(
+                self.stake_account.to_account_info().key,
+                self.stake_authority.key,
+                &target_pool,
+                StakeAuthorize::Staker,
+                None,
+            ),
+            &[
+                self.stake_program.to_account_info(),
+                self.stake_account.to_account_info(),
+                self.clock.to_account_info(),
+                self.stake_authority.to_account_info(),
+            ],
+        )?;
+
+        // change new withdrawer to target pool
+        invoke(
+            &stake::instruction::authorize(
+                self.stake_account.to_account_info().key,
+                self.stake_authority.key,
+                &target_pool,
+                StakeAuthorize::Withdrawer,
+                None,
+            ),
+            &[
+                self.stake_program.to_account_info(),
+                self.stake_account.to_account_info(),
+                self.clock.to_account_info(),
+                self.stake_authority.to_account_info(),
+            ],
+        )?;
+
+        // collect stake account
+        pool.stake_accounts.push(self.stake_account.key());
+
         Ok(())
     }
 }

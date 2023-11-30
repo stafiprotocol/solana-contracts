@@ -10,4 +10,25 @@ pub enum Errors {
 
     #[msg("Admin not match")]
     AdminNotMatch,
+
+    #[msg("Delegation empty")]
+    DelegationEmpty,
+
+    #[msg("Stake amount too low")]
+    StakeAmountTooLow,
+
+    #[msg("Stake account not active")]
+    StakeAccountNotActive,
+
+    #[msg("Stake account with lockup")]
+    StakeAccountWithLockup,
+
+    #[msg("Pool not exist")]
+    PoolNotExist,
+
+    #[msg("Validator not exist")]
+    ValidatorNotExist,
+
+    #[msg("Stake account already exist")]
+    StakeAccountAlreadyExist,
 }

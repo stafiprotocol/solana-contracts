@@ -43,10 +43,13 @@ pub mod rsol {
         Ok(())
     }
 
-    pub fn migrate_stake_account(ctx: Context<MigrateStakeAccount>) -> Result<()> {
+    pub fn migrate_stake_account(
+        ctx: Context<MigrateStakeAccount>,
+        target_pool: Pubkey,
+    ) -> Result<()> {
         check_context(&ctx)?;
 
-        ctx.accounts.process()?;
+        ctx.accounts.process(target_pool)?;
 
         Ok(())
     }
