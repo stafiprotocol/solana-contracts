@@ -28,13 +28,14 @@ pub struct Initialize<'info> {
 
     pub rsol_mint: Box<Account<'info, Mint>>,
 
+    pub admin: Signer<'info>,
+
     pub clock: Sysvar<'info, Clock>,
     pub rent: Sysvar<'info, Rent>,
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, AnchorSerialize, AnchorDeserialize)]
 pub struct InitializeData {
-    pub admin: Pubkey,
     pub rsol_mint: Pubkey,
     pub validator: Pubkey,
     pub bond: u64,
@@ -73,7 +74,7 @@ impl<'info> Initialize<'info> {
         );
 
         self.stake_manager.set_inner(StakeManager {
-            admin: initialize_data.admin,
+            admin: self.admin.key(),
             rsol_mint: initialize_data.rsol_mint,
             rent_exempt_for_pool_acc,
             fee_recipient: self.fee_recipient.key(),

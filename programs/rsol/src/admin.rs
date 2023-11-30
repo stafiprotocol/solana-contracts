@@ -4,10 +4,7 @@ use crate::{Errors, StakeManager};
 
 #[derive(Accounts)]
 pub struct TransferAdmin<'info> {
-    #[account(
-        mut,
-        has_one = admin @ Errors::AdminNotMatch
-    )]
+    #[account(mut,has_one = admin @ Errors::AdminNotMatch)]
     pub stake_manager: Account<'info, StakeManager>,
     pub admin: Signer<'info>,
 }

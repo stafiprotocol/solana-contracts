@@ -3,13 +3,13 @@ use anchor_lang::{prelude::*, Bumps};
 pub mod admin;
 pub mod errors;
 pub mod initialize;
-pub mod staker;
+pub mod mint;
 pub mod states;
 
 pub use crate::admin::*;
 pub use crate::errors::Errors;
 pub use crate::initialize::*;
-pub use crate::staker::*;
+pub use crate::mint::*;
 pub use crate::states::*;
 
 declare_id!("47pM7t6NrHmmrkrnnpr1FfVYNHCohVsStaAsdaqYsxEV");
@@ -27,33 +27,16 @@ fn check_context<T: Bumps>(ctx: &Context<T>) -> Result<()> {
 }
 
 #[program]
-pub mod rsol {
-
+pub mod minter {
     use super::*;
 
-    // initialize
-
-    pub fn initialize(ctx: Context<Initialize>, initialize_data: InitializeData) -> Result<()> {
+    pub fn initialize(ctx: Context<Initialize>, ext_mint_authorities: Vec<Pubkey>) -> Result<()> {
         check_context(&ctx)?;
 
-        ctx.accounts
-            .process(initialize_data, ctx.bumps.stake_pool)?;
+        ctx.accounts.process(ext_mint_authorities)?;
 
         Ok(())
     }
-
-    pub fn migrate_stake_account(
-        ctx: Context<MigrateStakeAccount>,
-        target_pool: Pubkey,
-    ) -> Result<()> {
-        check_context(&ctx)?;
-
-        ctx.accounts.process(target_pool)?;
-
-        Ok(())
-    }
-
-    // admin
 
     pub fn transfer_admin(ctx: Context<TransferAdmin>, new_admin: Pubkey) -> Result<()> {
         check_context(&ctx)?;
@@ -63,16 +46,21 @@ pub mod rsol {
         Ok(())
     }
 
-    // staker
-
-    pub fn staker_with_pool(
-        ctx: Context<StakeWithPool>,
-        target_pool: Pubkey,
-        stake_amount: u64,
+    pub fn set_mint_authorities(
+        ctx: Context<Initialize>,
+        ext_mint_authorities: Vec<Pubkey>,
     ) -> Result<()> {
         check_context(&ctx)?;
 
-        ctx.accounts.process(target_pool, stake_amount)?;
+        ctx.accounts.process(ext_mint_authorities)?;
+
+        Ok(())
+    }
+
+    pub fn mint_token(ctx: Context<MintToken>, mint_amount: u64) -> Result<()> {
+        check_context(&ctx)?;
+
+        ctx.accounts.process(mint_amount)?;
 
         Ok(())
     }

@@ -1,6 +1,5 @@
 use anchor_lang::prelude::*;
 use std::collections::BTreeMap;
-use std::convert::Into;
 
 #[account]
 #[derive(Debug)]
