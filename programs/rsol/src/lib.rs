@@ -34,11 +34,8 @@ pub mod rsol {
     pub fn initialize(ctx: Context<Initialize>, initialize_data: InitializeData) -> Result<()> {
         check_context(&ctx)?;
 
-        ctx.accounts.process(
-            initialize_data,
-            ctx.bumps.stake_pool,
-            ctx.bumps.fee_recipient,
-        )?;
+        ctx.accounts
+            .process(initialize_data, ctx.bumps.stake_pool)?;
 
         Ok(())
     }

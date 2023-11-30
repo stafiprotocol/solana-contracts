@@ -8,7 +8,7 @@ pub struct StakeManager {
     pub admin: Pubkey,
     pub rsol_mint: Pubkey,
     pub fee_recipient: Pubkey,
-    pub fee_recipient_seed_bump: u8,
+    pub rent_exempt_for_pool_acc: u64,
     pub latest_pool_seed_index: u8,
     pub min_stake_amount: u64,
     pub unstake_fee_commission: u64,  // decimals 9

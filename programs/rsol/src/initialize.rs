@@ -1,8 +1,8 @@
+use anchor_lang::prelude::*;
 use anchor_lang::solana_program::stake::instruction::LockupArgs;
 use anchor_lang::solana_program::{program::invoke, stake, stake::state::StakeAuthorize};
-use anchor_lang::{prelude::*, solana_program::program_pack::Pack};
 use anchor_spl::stake::{Stake, StakeAccount};
-use anchor_spl::token::{spl_token, Mint};
+use anchor_spl::token::{Mint, TokenAccount};
 use std::collections::BTreeMap;
 
 pub use crate::errors::Errors;
@@ -23,14 +23,8 @@ pub struct Initialize<'info> {
     )]
     pub stake_pool: SystemAccount<'info>,
 
-    #[account(
-        seeds = [
-            &stake_manager.key().to_bytes(),
-            StakeManager::FEE_RECIPIENT_SEED,
-        ],
-        bump,
-    )]
-    pub fee_recipient: SystemAccount<'info>,
+    #[account(token::mint = rsol_mint)]
+    pub fee_recipient: Box<Account<'info, TokenAccount>>,
 
     pub rsol_mint: Box<Account<'info, Mint>>,
 
@@ -53,24 +47,15 @@ pub struct InitializeData {
 }
 
 impl<'info> Initialize<'info> {
-    pub fn stake_manager(&self) -> &StakeManager {
-        &self.stake_manager
-    }
-
-    pub fn stake_manager_address(&self) -> &Pubkey {
-        self.stake_manager.to_account_info().key
-    }
-
-    pub fn process(
-        &mut self,
-        initialize_data: InitializeData,
-        pool_seed_bump: u8,
-        fee_recipient_seed_bump: u8,
-    ) -> Result<()> {
+    pub fn process(&mut self, initialize_data: InitializeData, pool_seed_bump: u8) -> Result<()> {
         require_keys_neq!(self.stake_manager.key(), self.stake_pool.key());
 
-        let rent_exempt_for_token_acc = self.rent.minimum_balance(spl_token::state::Account::LEN);
-        require_eq!(self.fee_recipient.lamports(), rent_exempt_for_token_acc);
+        let rent_exempt_for_pool_acc = self.rent.minimum_balance(0);
+        require_eq!(
+            self.stake_pool.lamports(),
+            rent_exempt_for_pool_acc,
+            Errors::RentNotEnough
+        );
 
         let mut bonded_pools = BTreeMap::new();
         bonded_pools.insert(
@@ -90,8 +75,8 @@ impl<'info> Initialize<'info> {
         self.stake_manager.set_inner(StakeManager {
             admin: initialize_data.admin,
             rsol_mint: initialize_data.rsol_mint,
+            rent_exempt_for_pool_acc,
             fee_recipient: self.fee_recipient.key(),
-            fee_recipient_seed_bump,
             latest_pool_seed_index: 1,
             min_stake_amount: StakeManager::DEFAULT_MIN_STAKE_AMOUNT,
             unstake_fee_commission: StakeManager::DEFAULT_UNSTAKE_FEE_COMMISSION,
