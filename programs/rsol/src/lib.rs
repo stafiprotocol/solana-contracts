@@ -36,8 +36,11 @@ pub mod rsol {
     pub fn initialize(ctx: Context<Initialize>, initialize_data: InitializeData) -> Result<()> {
         check_context(&ctx)?;
 
-        ctx.accounts
-            .process(initialize_data, ctx.bumps.stake_pool)?;
+        ctx.accounts.process(
+            initialize_data,
+            ctx.bumps.stake_pool,
+            ctx.bumps.ext_mint_authority,
+        )?;
 
         Ok(())
     }
@@ -65,14 +68,18 @@ pub mod rsol {
 
     // staker
 
-    pub fn staker_with_pool(
-        ctx: Context<StakeWithPool>,
-        target_pool: Pubkey,
-        stake_amount: u64,
-    ) -> Result<()> {
+    pub fn stake(ctx: Context<Stake>, stake_amount: u64) -> Result<()> {
         check_context(&ctx)?;
 
-        ctx.accounts.process(target_pool, stake_amount)?;
+        ctx.accounts.process(stake_amount)?;
+
+        Ok(())
+    }
+
+    pub fn un_stake(ctx: Context<Unstake>, unstake_amount: u64) -> Result<()> {
+        check_context(&ctx)?;
+
+        ctx.accounts.process(unstake_amount)?;
 
         Ok(())
     }

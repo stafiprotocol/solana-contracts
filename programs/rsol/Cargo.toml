@@ -23,3 +23,5 @@ anchor-spl = { version = "0.29.0", default-features = false, features = [
     "spl-token",
     "token",
 ] }
+minter = { path = "../minter", features = ["cpi"]}
+

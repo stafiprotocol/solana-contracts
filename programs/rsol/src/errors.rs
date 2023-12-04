@@ -32,6 +32,15 @@ pub enum Errors {
     #[msg("Stake account already exist")]
     StakeAccountAlreadyExist,
 
-    #[msg("rent not enough")]
+    #[msg("Rent not enough")]
     RentNotEnough,
+
+    #[msg("Balance not enough")]
+    BalanceNotEnough,
+
+    #[msg("Calulation fail")]
+    CalculationFail,
+
+    #[msg("authority not match")]
+    AuthorityNotMatch,
 }

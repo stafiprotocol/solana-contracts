@@ -22,6 +22,15 @@ pub struct Initialize<'info> {
         bump,
     )]
     pub stake_pool: SystemAccount<'info>,
+    
+    #[account(
+        seeds = [
+            &stake_manager.key().to_bytes(),
+            StakeManager::EXT_MINT_AUTHORITY_SEED,
+        ],
+        bump,
+    )]
+    pub ext_mint_authority: SystemAccount<'info>,
 
     #[account(token::mint = rsol_mint)]
     pub fee_recipient: Box<Account<'info, TokenAccount>>,
@@ -48,7 +57,12 @@ pub struct InitializeData {
 }
 
 impl<'info> Initialize<'info> {
-    pub fn process(&mut self, initialize_data: InitializeData, pool_seed_bump: u8) -> Result<()> {
+    pub fn process(
+        &mut self,
+        initialize_data: InitializeData,
+        pool_seed_bump: u8,
+        ext_mint_authority_seed_bump: u8,
+    ) -> Result<()> {
         require_keys_neq!(self.stake_manager.key(), self.stake_pool.key());
 
         let rent_exempt_for_pool_acc = self.rent.minimum_balance(0);
@@ -77,6 +91,7 @@ impl<'info> Initialize<'info> {
             admin: self.admin.key(),
             rsol_mint: initialize_data.rsol_mint,
             rent_exempt_for_pool_acc,
+            ext_mint_authority_seed_bump,
             fee_recipient: self.fee_recipient.key(),
             latest_pool_seed_index: 1,
             min_stake_amount: StakeManager::DEFAULT_MIN_STAKE_AMOUNT,

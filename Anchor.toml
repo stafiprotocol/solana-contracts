@@ -7,7 +7,9 @@ seeds = false
 skip-lint = false
 
 [programs.localnet]
-sol_lsd_programs = "47pM7t6NrHmmrkrnnpr1FfVYNHCohVsStaAsdaqYsxEV"
+bridge = "H3mPx8i41Zn4dLC6ZQRBzNRe1cqYdbcDP1WpojnaiAVo"
+minter = "47pM7t6NrHmmrkrnnpr1FfVYNHCohVsStaAsdaqYsxEV"
+rsol = "47pM7t6NrHmmrkrnnpr1FfVYNHCohVsStaAsdaqYsxEV"
 
 [registry]
 url = "https://api.apr.dev"

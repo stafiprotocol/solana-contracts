@@ -6,26 +6,26 @@ pub use crate::states::*;
 
 #[derive(Accounts)]
 pub struct MintToken<'info> {
-    pub minter: Box<Account<'info, Minter>>,
+    pub mint_manager: Box<Account<'info, MintManager>>,
 
     #[account(mut)]
-    pub token_mint: Box<Account<'info, Mint>>,
+    pub rsol_mint: Box<Account<'info, Mint>>,
 
     #[account(
         mut,
-        token::mint = minter.token_mint
+        token::mint = mint_manager.rsol_mint
     )]
     pub mint_to: Box<Account<'info, TokenAccount>>,
 
     /// CHECK: pda
     #[account(
         seeds = [
-            &minter.key().to_bytes(),
-            Minter::MINT_AUTHORITY_SEED
+            &mint_manager.key().to_bytes(),
+            MintManager::MINT_AUTHORITY_SEED
         ],
-        bump = minter.mint_authority_seed_bump
+        bump = mint_manager.mint_authority_seed_bump
     )]
-    pub token_mint_authority: UncheckedAccount<'info>,
+    pub mint_authority: UncheckedAccount<'info>,
 
     pub ext_mint_authority: Signer<'info>,
 
@@ -35,7 +35,7 @@ pub struct MintToken<'info> {
 impl<'info> MintToken<'info> {
     pub fn process(&mut self, mint_amount: u64) -> Result<()> {
         if !self
-            .minter
+            .mint_manager
             .ext_mint_authorities
             .contains(self.ext_mint_authority.key)
         {
@@ -46,20 +46,20 @@ impl<'info> MintToken<'info> {
             CpiContext::new_with_signer(
                 self.token_program.to_account_info(),
                 MintTo {
-                    mint: self.token_mint.to_account_info(),
+                    mint: self.rsol_mint.to_account_info(),
                     to: self.mint_to.to_account_info(),
-                    authority: self.token_mint_authority.to_account_info(),
+                    authority: self.mint_authority.to_account_info(),
                 },
                 &[&[
-                    &self.minter.key().to_bytes(),
-                    Minter::MINT_AUTHORITY_SEED,
-                    &[self.minter.mint_authority_seed_bump],
+                    &self.mint_manager.key().to_bytes(),
+                    MintManager::MINT_AUTHORITY_SEED,
+                    &[self.mint_manager.mint_authority_seed_bump],
                 ]],
             ),
             mint_amount,
         )?;
 
-        msg!("token mint {}", mint_amount);
+        msg!("rsol mint amount: {}", mint_amount);
 
         Ok(())
     }

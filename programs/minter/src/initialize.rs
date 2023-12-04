@@ -8,9 +8,9 @@ pub use crate::ID;
 #[derive(Accounts)]
 pub struct Initialize<'info> {
     #[account(zero)]
-    pub minter: Box<Account<'info, Minter>>,
+    pub mint_manager: Box<Account<'info, MintManager>>,
 
-    pub token_mint: Box<Account<'info, Mint>>,
+    pub rsol_mint: Box<Account<'info, Mint>>,
 
     pub admin: Signer<'info>,
 
@@ -19,12 +19,12 @@ pub struct Initialize<'info> {
 
 impl<'info> Initialize<'info> {
     pub fn minter_address(&self) -> &Pubkey {
-        self.minter.to_account_info().key
+        self.mint_manager.to_account_info().key
     }
 
     pub fn find_token_mint_authority(minter: &Pubkey) -> (Pubkey, u8) {
         Pubkey::find_program_address(
-            &[&minter.to_bytes()[..32], Minter::MINT_AUTHORITY_SEED],
+            &[&minter.to_bytes()[..32], MintManager::MINT_AUTHORITY_SEED],
             &ID,
         )
     }
@@ -39,7 +39,7 @@ impl<'info> Initialize<'info> {
             authority_bump
         );
 
-        if !self.token_mint.freeze_authority.is_none() {
+        if !self.rsol_mint.freeze_authority.is_none() {
             return err!(Errors::InvalidTokenAccountData);
         }
         Ok(authority_bump)
@@ -47,9 +47,9 @@ impl<'info> Initialize<'info> {
 
     pub fn process(&mut self, ext_mint_authorities: Vec<Pubkey>) -> Result<()> {
         let token_mint_authority_seed_bump = self.check_token_mint()?;
-        self.minter.set_inner(Minter {
+        self.mint_manager.set_inner(MintManager {
             admin: self.admin.key(),
-            token_mint: self.token_mint.key(),
+            rsol_mint: self.rsol_mint.key(),
             mint_authority_seed_bump: token_mint_authority_seed_bump,
             ext_mint_authorities,
         });
