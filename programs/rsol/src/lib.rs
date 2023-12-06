@@ -1,12 +1,14 @@
 use anchor_lang::{prelude::*, Bumps};
 
 pub mod admin;
+pub mod era;
 pub mod errors;
 pub mod initialize;
 pub mod staker;
 pub mod states;
 
 pub use crate::admin::*;
+pub use crate::era::*;
 pub use crate::errors::Errors;
 pub use crate::initialize::*;
 pub use crate::staker::*;
@@ -36,22 +38,16 @@ pub mod rsol {
     pub fn initialize(ctx: Context<Initialize>, initialize_data: InitializeData) -> Result<()> {
         check_context(&ctx)?;
 
-        ctx.accounts.process(
-            initialize_data,
-            ctx.bumps.stake_pool,
-            ctx.bumps.ext_mint_authority,
-        )?;
+        ctx.accounts
+            .process(initialize_data, ctx.bumps.stake_pool)?;
 
         Ok(())
     }
 
-    pub fn migrate_stake_account(
-        ctx: Context<MigrateStakeAccount>,
-        target_pool: Pubkey,
-    ) -> Result<()> {
+    pub fn migrate_stake_account(ctx: Context<MigrateStakeAccount>) -> Result<()> {
         check_context(&ctx)?;
 
-        ctx.accounts.process(target_pool)?;
+        ctx.accounts.process()?;
 
         Ok(())
     }
@@ -76,10 +72,20 @@ pub mod rsol {
         Ok(())
     }
 
-    pub fn un_stake(ctx: Context<Unstake>, unstake_amount: u64) -> Result<()> {
+    pub fn unstake(ctx: Context<Unstake>, unstake_amount: u64) -> Result<()> {
         check_context(&ctx)?;
 
         ctx.accounts.process(unstake_amount)?;
+
+        Ok(())
+    }
+
+    // era
+
+    pub fn new_era(ctx: Context<NewEra>) -> Result<()> {
+        check_context(&ctx)?;
+
+        ctx.accounts.process()?;
 
         Ok(())
     }

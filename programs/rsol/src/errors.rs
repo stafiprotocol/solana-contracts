@@ -41,6 +41,9 @@ pub enum Errors {
     #[msg("Calulation fail")]
     CalculationFail,
 
-    #[msg("authority not match")]
+    #[msg("Authority not match")]
     AuthorityNotMatch,
+
+    #[msg("Era is latest")]
+    EraIsLatest,
 }

@@ -3,10 +3,9 @@ use anchor_lang::solana_program::stake::instruction::LockupArgs;
 use anchor_lang::solana_program::{program::invoke, stake, stake::state::StakeAuthorize};
 use anchor_spl::stake::{Stake, StakeAccount};
 use anchor_spl::token::{Mint, TokenAccount};
-use std::collections::BTreeMap;
 
 pub use crate::errors::Errors;
-pub use crate::{PoolInfo, StakeManager};
+pub use crate::StakeManager;
 
 #[derive(Accounts)]
 pub struct Initialize<'info> {
@@ -17,20 +16,10 @@ pub struct Initialize<'info> {
         seeds = [
             &stake_manager.key().to_bytes(),
             StakeManager::POOL_SEED,
-            &[0]
         ],
         bump,
     )]
     pub stake_pool: SystemAccount<'info>,
-    
-    #[account(
-        seeds = [
-            &stake_manager.key().to_bytes(),
-            StakeManager::EXT_MINT_AUTHORITY_SEED,
-        ],
-        bump,
-    )]
-    pub ext_mint_authority: SystemAccount<'info>,
 
     #[account(token::mint = rsol_mint)]
     pub fee_recipient: Box<Account<'info, TokenAccount>>,
@@ -57,12 +46,7 @@ pub struct InitializeData {
 }
 
 impl<'info> Initialize<'info> {
-    pub fn process(
-        &mut self,
-        initialize_data: InitializeData,
-        pool_seed_bump: u8,
-        ext_mint_authority_seed_bump: u8,
-    ) -> Result<()> {
+    pub fn process(&mut self, initialize_data: InitializeData, pool_seed_bump: u8) -> Result<()> {
         require_keys_neq!(self.stake_manager.key(), self.stake_pool.key());
 
         let rent_exempt_for_pool_acc = self.rent.minimum_balance(0);
@@ -72,28 +56,12 @@ impl<'info> Initialize<'info> {
             Errors::RentNotEnough
         );
 
-        let mut bonded_pools = BTreeMap::new();
-        bonded_pools.insert(
-            self.stake_pool.key(),
-            PoolInfo {
-                seed_index: 0,
-                seed_bump: pool_seed_bump,
-                bond: initialize_data.bond,
-                unbond: initialize_data.unbond,
-                active: initialize_data.active,
-                validators: vec![initialize_data.validator],
-                stake_accounts: vec![],
-                split_accounts: vec![],
-            },
-        );
-
         self.stake_manager.set_inner(StakeManager {
             admin: self.admin.key(),
             rsol_mint: initialize_data.rsol_mint,
             rent_exempt_for_pool_acc,
-            ext_mint_authority_seed_bump,
+            pool_seed_bump,
             fee_recipient: self.fee_recipient.key(),
-            latest_pool_seed_index: 1,
             min_stake_amount: StakeManager::DEFAULT_MIN_STAKE_AMOUNT,
             unstake_fee_commission: StakeManager::DEFAULT_UNSTAKE_FEE_COMMISSION,
             protocol_fee_commission: StakeManager::DEFAULT_PROTOCOL_FEE_COMMISSION,
@@ -103,7 +71,12 @@ impl<'info> Initialize<'info> {
             rate: StakeManager::DEFAULT_RATE,
             total_rsol_supply: initialize_data.total_rsol_supply,
             total_protocol_fee: initialize_data.total_protocol_fee,
-            bonded_pools,
+            bond: initialize_data.bond,
+            unbond: initialize_data.unbond,
+            active: initialize_data.active,
+            validators: vec![initialize_data.validator],
+            stake_accounts: vec![],
+            split_accounts: vec![],
         });
 
         Ok(())
@@ -115,6 +88,16 @@ pub struct MigrateStakeAccount<'info> {
     #[account(mut)]
     pub stake_manager: Account<'info, StakeManager>,
 
+    #[account(
+        mut,
+        seeds = [
+            &stake_manager.key().to_bytes(),
+            StakeManager::POOL_SEED,
+        ],
+        bump = stake_manager.pool_seed_bump
+    )]
+    pub stake_pool: SystemAccount<'info>,
+
     #[account(mut)]
     pub stake_account: Box<Account<'info, StakeAccount>>,
     pub stake_authority: Signer<'info>,
@@ -124,7 +107,7 @@ pub struct MigrateStakeAccount<'info> {
 }
 
 impl<'info> MigrateStakeAccount<'info> {
-    pub fn process(&mut self, target_pool: Pubkey) -> Result<()> {
+    pub fn process(&mut self) -> Result<()> {
         let delegation = self
             .stake_account
             .delegation()
@@ -142,16 +125,18 @@ impl<'info> MigrateStakeAccount<'info> {
             Errors::StakeAccountNotActive
         );
 
-        let pool = self
+        if !self
             .stake_manager
-            .bonded_pools
-            .get_mut(&target_pool)
-            .ok_or_else(|| error!(Errors::PoolNotExist))?;
-
-        if !pool.validators.contains(&delegation.voter_pubkey) {
+            .validators
+            .contains(&delegation.voter_pubkey)
+        {
             return err!(Errors::ValidatorNotExist);
         }
-        if pool.stake_accounts.contains(&self.stake_account.key()) {
+        if self
+            .stake_manager
+            .stake_accounts
+            .contains(&self.stake_account.key())
+        {
             return err!(Errors::StakeAccountAlreadyExist);
         }
 
@@ -185,7 +170,7 @@ impl<'info> MigrateStakeAccount<'info> {
             &stake::instruction::authorize(
                 self.stake_account.to_account_info().key,
                 self.stake_authority.key,
-                &target_pool,
+                &self.stake_pool.key(),
                 StakeAuthorize::Staker,
                 None,
             ),
@@ -202,7 +187,7 @@ impl<'info> MigrateStakeAccount<'info> {
             &stake::instruction::authorize(
                 self.stake_account.to_account_info().key,
                 self.stake_authority.key,
-                &target_pool,
+                &self.stake_pool.key(),
                 StakeAuthorize::Withdrawer,
                 None,
             ),
@@ -215,7 +200,9 @@ impl<'info> MigrateStakeAccount<'info> {
         )?;
 
         // collect stake account
-        pool.stake_accounts.push(self.stake_account.key());
+        self.stake_manager
+            .stake_accounts
+            .push(self.stake_account.key());
 
         Ok(())
     }

@@ -13,13 +13,20 @@ pub struct Stake<'info> {
     pub stake_manager: Account<'info, StakeManager>,
 
     #[account(
+            mut,
+            seeds = [
+                &stake_manager.key().to_bytes(),
+                StakeManager::POOL_SEED,
+            ],
+            bump = stake_manager.pool_seed_bump
+        )]
+    pub stake_pool: SystemAccount<'info>,
+
+    #[account(
         mut,
         owner = system_program::ID
     )]
     pub from: Signer<'info>,
-
-    #[account(mut)]
-    pub target_pool: SystemAccount<'info>,
 
     pub mint_manager: Box<Account<'info, MintManager>>,
 
@@ -42,16 +49,6 @@ pub struct Stake<'info> {
     )]
     pub mint_authority: UncheckedAccount<'info>,
 
-    /// CHECK: pda
-    #[account(
-        seeds = [
-            &stake_manager.key().to_bytes(),
-            StakeManager::EXT_MINT_AUTHORITY_SEED
-        ],
-        bump = stake_manager.ext_mint_authority_seed_bump
-    )]
-    pub ext_mint_authority: UncheckedAccount<'info>,
-
     pub minter_program: Program<'info, Minter>,
     pub system_program: Program<'info, System>,
     pub token_program: Program<'info, Token>,
@@ -70,14 +67,8 @@ impl<'info> Stake<'info> {
 
         let rsol_amount = self.stake_manager.calc_rsol_amount(stake_amount)?;
 
-        let pool = self
-            .stake_manager
-            .bonded_pools
-            .get_mut(&self.target_pool.key())
-            .ok_or_else(|| error!(Errors::PoolNotExist))?;
-
-        pool.bond = pool.bond + stake_amount;
-        pool.active = pool.active + stake_amount;
+        self.stake_manager.bond = self.stake_manager.bond + stake_amount;
+        self.stake_manager.active = self.stake_manager.active + stake_amount;
 
         // transfer lamports to the pool
         transfer(
@@ -85,7 +76,7 @@ impl<'info> Stake<'info> {
                 self.system_program.to_account_info(),
                 Transfer {
                     from: self.from.to_account_info(),
-                    to: self.target_pool.to_account_info(),
+                    to: self.stake_pool.to_account_info(),
                 },
             ),
             stake_amount,
@@ -98,7 +89,7 @@ impl<'info> Stake<'info> {
             rsol_mint: self.rsol_mint.to_account_info(),
             mint_to: self.mint_to.to_account_info(),
             mint_authority: self.mint_authority.to_account_info(),
-            ext_mint_authority: self.ext_mint_authority.to_account_info(),
+            ext_mint_authority: self.stake_pool.to_account_info(),
             token_program: self.token_program.to_account_info(),
         };
         minter::cpi::mint_token(
@@ -114,6 +105,16 @@ impl<'info> Stake<'info> {
 pub struct Unstake<'info> {
     #[account(mut)]
     pub stake_manager: Box<Account<'info, StakeManager>>,
+
+    #[account(
+        mut,
+        seeds = [
+            &stake_manager.key().to_bytes(),
+            StakeManager::POOL_SEED,
+        ],
+        bump = stake_manager.pool_seed_bump
+    )]
+    pub stake_pool: SystemAccount<'info>,
 
     #[account(mut)]
     pub rsol_mint: Box<Account<'info, Mint>>,
@@ -140,6 +141,9 @@ pub struct Unstake<'info> {
 impl<'info> Unstake<'info> {
     pub fn process(&mut self, unstake_amount: u64) -> Result<()> {
         check_token_account(&self.burn_from, self.burn_authority.key, unstake_amount)?;
+
+        self.stake_manager.unbond = self.stake_manager.unbond + unstake_amount;
+        self.stake_manager.active = self.stake_manager.active - unstake_amount;
 
         let sol_amount = self.stake_manager.calc_sol_amount(unstake_amount)?;
 
