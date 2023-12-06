@@ -23,8 +23,8 @@ pub enum Errors {
     #[msg("Stake account with lockup")]
     StakeAccountWithLockup,
 
-    #[msg("Pool not exist")]
-    PoolNotExist,
+    #[msg("Unstake recipient not match")]
+    UnstakeRecipientNotMatch,
 
     #[msg("Validator not exist")]
     ValidatorNotExist,
@@ -46,4 +46,16 @@ pub enum Errors {
 
     #[msg("Era is latest")]
     EraIsLatest,
+
+    #[msg("Invalid unstake account")]
+    InvalidUnstakeAccount,
+
+    #[msg("Unstake account not claimable")]
+    UnstakeAccountNotClaimable,
+
+    #[msg("Unstake account amount zero")]
+    UnstakeAccountAmountZero,
+
+    #[msg("Pool balance not enough")]
+    PoolBalanceNotEnough,
 }

@@ -80,6 +80,14 @@ pub mod rsol {
         Ok(())
     }
 
+    pub fn claim(ctx: Context<Claim>) -> Result<()> {
+        check_context(&ctx)?;
+
+        ctx.accounts.process()?;
+
+        Ok(())
+    }
+
     // era
 
     pub fn new_era(ctx: Context<NewEra>) -> Result<()> {

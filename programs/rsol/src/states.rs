@@ -10,18 +10,20 @@ pub struct StakeManager {
     pub fee_recipient: Pubkey,
     pub pool_seed_bump: u8,
     pub rent_exempt_for_pool_acc: u64,
+
     pub min_stake_amount: u64,
     pub unstake_fee_commission: u64,  // decimals 9
     pub protocol_fee_commission: u64, // decimals 9
     pub rate_change_limit: u64,       // decimals 9
     pub unbonding_duration: u64,
+
     pub latest_era: u64,
     pub rate: u64, // decimals 9
-    pub total_rsol_supply: u64,
-    pub total_protocol_fee: u64,
     pub bond: u64,
     pub unbond: u64,
     pub active: u64,
+    pub total_rsol_supply: u64,
+    pub total_protocol_fee: u64,
     pub validators: Vec<Pubkey>,
     pub stake_accounts: Vec<Pubkey>,
     pub split_accounts: Vec<Pubkey>,
