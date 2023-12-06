@@ -140,7 +140,23 @@ pub struct Unstake<'info> {
 
 impl<'info> Unstake<'info> {
     pub fn process(&mut self, unstake_amount: u64) -> Result<()> {
-        check_token_account(&self.burn_from, self.burn_authority.key, unstake_amount)?;
+        require_gt!(unstake_amount, 0, Errors::UnstakeAmountIsZero);
+        
+        if self.burn_from.delegate.contains(self.burn_authority.key) {
+            require_gte!(
+                self.burn_from.delegated_amount,
+                unstake_amount,
+                Errors::BalanceNotEnough
+            );
+        } else if *self.burn_authority.key == self.burn_from.owner {
+            require_gte!(
+                self.burn_from.amount,
+                unstake_amount,
+                Errors::BalanceNotEnough
+            );
+        } else {
+            return err!(Errors::AuthorityNotMatch);
+        }
 
         self.stake_manager.unbond = self.stake_manager.unbond + unstake_amount;
         self.stake_manager.active = self.stake_manager.active - unstake_amount;
@@ -168,43 +184,6 @@ impl<'info> Unstake<'info> {
 
         Ok(())
     }
-}
-
-#[macro_export]
-macro_rules! require_lte {
-    ($value1: expr, $value2: expr, $error_code: expr $(,)?) => {
-        if $value1 > $value2 {
-            return Err(error!($error_code).with_values(($value1, $value2)));
-        }
-    };
-}
-
-#[macro_export]
-macro_rules! require_lt {
-    ($value1: expr, $value2: expr, $error_code: expr $(,)?) => {
-        if $value1 >= $value2 {
-            return Err(error!($error_code).with_values(($value1, $value2)));
-        }
-    };
-}
-
-pub fn check_token_account<'info>(
-    token_account: &Account<'info, TokenAccount>,
-    authority: &Pubkey,
-    token_amount: u64,
-) -> Result<()> {
-    if token_account.delegate.contains(authority) {
-        require_lte!(
-            token_amount,
-            token_account.delegated_amount,
-            Errors::BalanceNotEnough
-        );
-    } else if *authority == token_account.owner {
-        require_lte!(token_amount, token_account.amount, Errors::BalanceNotEnough);
-    } else {
-        return err!(Errors::AuthorityNotMatch);
-    }
-    Ok(())
 }
 
 #[derive(Accounts)]
@@ -253,7 +232,6 @@ impl<'info> Claim<'info> {
             Errors::UnstakeAccountAmountZero
         );
 
-        //check if ticket is due
         require_gte!(
             self.clock.epoch,
             self.unstake_account.created_epoch + self.stake_manager.unbonding_duration,

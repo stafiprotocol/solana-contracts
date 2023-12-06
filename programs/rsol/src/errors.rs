@@ -58,4 +58,7 @@ pub enum Errors {
 
     #[msg("Pool balance not enough")]
     PoolBalanceNotEnough,
+
+    #[msg("Unstake amount is zero")]
+    UnstakeAmountIsZero,
 }
