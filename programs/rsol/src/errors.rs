@@ -29,8 +29,17 @@ pub enum Errors {
     #[msg("Validator not exist")]
     ValidatorNotExist,
 
+    #[msg("Validator not match")]
+    ValidatorNotMatch,
+
     #[msg("Stake account already exist")]
     StakeAccountAlreadyExist,
+
+    #[msg("Split stake account already exist")]
+    SplitStakeAccountAlreadyExist,
+
+    #[msg("Stake account not exist")]
+    StakeAccountNotExist,
 
     #[msg("Rent not enough")]
     RentNotEnough,
@@ -55,6 +64,12 @@ pub enum Errors {
 
     #[msg("Era does not need bond")]
     EraDoesNotNeedBond,
+
+    #[msg("Amount unmatch")]
+    AmountUnmatch,
+
+    #[msg("Era does not need unbond")]
+    EraDoesNotNeedUnBond,
 
     #[msg("Invalid unstake account")]
     InvalidUnstakeAccount,

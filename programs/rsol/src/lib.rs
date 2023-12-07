@@ -1,14 +1,18 @@
 use anchor_lang::{prelude::*, Bumps};
 
 pub mod admin;
-pub mod era;
+pub mod era_bond;
+pub mod era_new;
+pub mod era_unbond;
 pub mod errors;
 pub mod initialize;
 pub mod staker;
 pub mod states;
 
 pub use crate::admin::*;
-pub use crate::era::*;
+pub use crate::era_bond::*;
+pub use crate::era_new::*;
+pub use crate::era_unbond::*;
 pub use crate::errors::Errors;
 pub use crate::initialize::*;
 pub use crate::staker::*;
