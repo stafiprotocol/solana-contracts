@@ -67,8 +67,8 @@ impl<'info> Stake<'info> {
 
         let rsol_amount = self.stake_manager.calc_rsol_amount(stake_amount)?;
 
-        self.stake_manager.bond = self.stake_manager.bond + stake_amount;
-        self.stake_manager.active = self.stake_manager.active + stake_amount;
+        self.stake_manager.era_bond += stake_amount;
+        self.stake_manager.active += stake_amount;
 
         // transfer lamports to the pool
         transfer(
@@ -141,7 +141,7 @@ pub struct Unstake<'info> {
 impl<'info> Unstake<'info> {
     pub fn process(&mut self, unstake_amount: u64) -> Result<()> {
         require_gt!(unstake_amount, 0, Errors::UnstakeAmountIsZero);
-        
+
         if self.burn_from.delegate.contains(self.burn_authority.key) {
             require_gte!(
                 self.burn_from.delegated_amount,
@@ -158,8 +158,8 @@ impl<'info> Unstake<'info> {
             return err!(Errors::AuthorityNotMatch);
         }
 
-        self.stake_manager.unbond = self.stake_manager.unbond + unstake_amount;
-        self.stake_manager.active = self.stake_manager.active - unstake_amount;
+        self.stake_manager.era_unbond += unstake_amount;
+        self.stake_manager.active -= unstake_amount;
 
         let sol_amount = self.stake_manager.calc_sol_amount(unstake_amount)?;
 

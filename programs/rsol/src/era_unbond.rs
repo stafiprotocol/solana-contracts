@@ -1,23 +1,15 @@
-use crate::{EraProcessData, Errors, StakeManager};
+use crate::{Errors, StakeManager};
 use anchor_lang::prelude::*;
 use anchor_lang::{
-    prelude::*,
-    system_program::{transfer, Transfer},
-};
-use anchor_lang::{
     solana_program::{
-        program::{invoke, invoke_signed},
-        stake::{
-            self,
-            state::{Authorized, Lockup, StakeState},
-        },
-        sysvar::stake_history,
+        program::invoke_signed,
+        stake::{self, state::StakeState},
     },
     system_program,
 };
 use anchor_spl::stake::{
-    deactivate_stake as solana_deactivate_stake, withdraw,
-    DeactivateStake as SolanaDeactivateStake, Stake, StakeAccount, Withdraw,
+    deactivate_stake as solana_deactivate_stake, DeactivateStake as SolanaDeactivateStake, Stake,
+    StakeAccount,
 };
 
 #[derive(Accounts)]
@@ -25,30 +17,30 @@ pub struct UnBond<'info> {
     #[account(mut)]
     pub stake_manager: Account<'info, StakeManager>,
 
-    /// CHECK: validator account
-    #[account(mut)]
-    pub validator: UncheckedAccount<'info>,
-
     #[account(
-    mut,
-    seeds = [
-        &stake_manager.key().to_bytes(),
-        StakeManager::POOL_SEED
-    ],
-    bump = stake_manager.pool_seed_bump
-    )]
+        mut,
+        seeds = [
+            &stake_manager.key().to_bytes(),
+            StakeManager::POOL_SEED
+            ],
+            bump = stake_manager.pool_seed_bump
+        )]
     pub stake_pool: SystemAccount<'info>,
 
     #[account(mut)]
     pub stake_account: Account<'info, StakeAccount>,
 
     #[account(
-        init,
-        payer = rent_payer,
-        space = std::mem::size_of::<StakeState>(),
-        owner = stake::program::ID,
-    )]
+            init,
+            payer = rent_payer,
+            space = std::mem::size_of::<StakeState>(),
+            owner = stake::program::ID,
+        )]
     pub split_stake_account: Account<'info, StakeAccount>,
+
+    /// CHECK: validator account
+    #[account(mut)]
+    pub validator: UncheckedAccount<'info>,
 
     #[account(
         mut,
@@ -57,16 +49,7 @@ pub struct UnBond<'info> {
     pub rent_payer: Signer<'info>,
 
     pub clock: Sysvar<'info, Clock>,
-    pub epoch_schedule: Sysvar<'info, EpochSchedule>,
     pub rent: Sysvar<'info, Rent>,
-
-    /// CHECK: stake config account
-    #[account(address = stake::config::ID)]
-    pub stake_config: UncheckedAccount<'info>,
-
-    /// CHECK: stake history account
-    #[account(address = stake_history::ID)]
-    pub stake_history: UncheckedAccount<'info>,
 
     pub stake_program: Program<'info, Stake>,
     pub system_program: Program<'info, System>,
@@ -74,10 +57,9 @@ pub struct UnBond<'info> {
 
 impl<'info> UnBond<'info> {
     pub fn process(&mut self, unbond_amount: u64) -> Result<()> {
-        require_gt!(
-            self.stake_manager.era_process_data.need_unbond,
-            0,
-            Errors::EraDoesNotNeedUnBond
+        require!(
+            self.stake_manager.era_process_data.need_unbond(),
+            Errors::EraNoNeedUnBond
         );
 
         require_gte!(
@@ -136,6 +118,11 @@ impl<'info> UnBond<'info> {
 
             self.stake_manager
                 .stake_accounts
+                .retain(|&e| e != self.stake_account.key());
+
+            self.stake_manager
+                .era_process_data
+                .pending_stake_accounts
                 .retain(|&e| e != self.stake_account.key());
         } else {
             let split_instruction = stake::instruction::split(

@@ -2,8 +2,11 @@ use anchor_lang::{prelude::*, Bumps};
 
 pub mod admin;
 pub mod era_bond;
+pub mod era_merge;
 pub mod era_new;
 pub mod era_unbond;
+pub mod era_update_active;
+pub mod era_update_rate;
 pub mod errors;
 pub mod initialize;
 pub mod staker;
@@ -11,8 +14,11 @@ pub mod states;
 
 pub use crate::admin::*;
 pub use crate::era_bond::*;
+pub use crate::era_merge::*;
 pub use crate::era_new::*;
 pub use crate::era_unbond::*;
+pub use crate::era_update_active::*;
+pub use crate::era_update_rate::*;
 pub use crate::errors::Errors;
 pub use crate::initialize::*;
 pub use crate::staker::*;
@@ -95,6 +101,46 @@ pub mod rsol {
     // era
 
     pub fn new_era(ctx: Context<NewEra>) -> Result<()> {
+        check_context(&ctx)?;
+
+        ctx.accounts.process()?;
+
+        Ok(())
+    }
+
+    pub fn bond(ctx: Context<Bond>) -> Result<()> {
+        check_context(&ctx)?;
+
+        ctx.accounts.process()?;
+
+        Ok(())
+    }
+
+    pub fn unbond(ctx: Context<UnBond>, unbond_amount: u64) -> Result<()> {
+        check_context(&ctx)?;
+
+        ctx.accounts.process(unbond_amount)?;
+
+        Ok(())
+    }
+
+    pub fn update_active(ctx: Context<UpdateActive>) -> Result<()> {
+        check_context(&ctx)?;
+
+        ctx.accounts.process()?;
+
+        Ok(())
+    }
+
+    pub fn update_rate(ctx: Context<UpdateRate>) -> Result<()> {
+        check_context(&ctx)?;
+
+        ctx.accounts.process()?;
+
+        Ok(())
+    }
+
+    pub fn merge(ctx: Context<Merge>) -> Result<()> {
         check_context(&ctx)?;
 
         ctx.accounts.process()?;

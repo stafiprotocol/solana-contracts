@@ -19,8 +19,8 @@ pub struct StakeManager {
 
     pub latest_era: u64,
     pub rate: u64, // decimals 9
-    pub bond: u64,
-    pub unbond: u64,
+    pub era_bond: u64,
+    pub era_unbond: u64,
     pub active: u64,
     pub total_rsol_supply: u64,
     pub total_protocol_fee: u64,
@@ -47,6 +47,27 @@ impl EraProcessData {
             && self.new_active == 0
             && self.pending_stake_accounts.is_empty();
     }
+
+    pub fn need_bond(&self) -> bool {
+        return self.need_bond > 0;
+    }
+
+    pub fn need_unbond(&self) -> bool {
+        return self.need_unbond > 0;
+    }
+
+    pub fn need_update_active(&self) -> bool {
+        return self.need_bond == 0
+            || self.need_unbond == 0 && !self.pending_stake_accounts.is_empty();
+    }
+
+    pub fn need_update_rate(&self) -> bool {
+        return self.need_bond == 0
+            && self.need_unbond == 0
+            && self.pending_stake_accounts.is_empty()
+            && self.old_active != 0
+            && self.new_active != 0;
+    }
 }
 
 impl StakeManager {
@@ -54,7 +75,7 @@ impl StakeManager {
     pub const FEE_RECIPIENT_SEED: &'static [u8] = b"fee_recipient_seed";
 
     pub const DEFAULT_UNBONDING_DURATION: u64 = 3;
-    pub const DEFAULT_RATE: u64 = 1_000_000_000;
+    pub const RATE_BASE: u64 = 1_000_000_000;
     pub const DEFAULT_MIN_STAKE_AMOUNT: u64 = 1_000_000;
     pub const DEFAULT_UNSTAKE_FEE_COMMISSION: u64 = 100_000_000;
     pub const DEFAULT_PROTOCOL_FEE_COMMISSION: u64 = 100_000_000;
@@ -62,14 +83,14 @@ impl StakeManager {
 
     pub fn calc_rsol_amount(&self, sol_amount: u64) -> Result<u64> {
         u64::try_from(
-            (sol_amount as u128) * (StakeManager::DEFAULT_RATE as u128) / (self.rate as u128),
+            (sol_amount as u128) * (StakeManager::RATE_BASE as u128) / (self.rate as u128),
         )
         .map_err(|_| error!(Errors::CalculationFail))
     }
 
     pub fn calc_sol_amount(&self, rsol_amount: u64) -> Result<u64> {
         u64::try_from(
-            (rsol_amount as u128) * (self.rate as u128) / (StakeManager::DEFAULT_RATE as u128),
+            (rsol_amount as u128) * (self.rate as u128) / (StakeManager::RATE_BASE as u128),
         )
         .map_err(|_| error!(Errors::CalculationFail))
     }

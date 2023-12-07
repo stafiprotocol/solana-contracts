@@ -1,9 +1,6 @@
-use crate::{EraProcessData, Errors, StakeManager};
+use crate::{Errors, StakeManager};
 use anchor_lang::prelude::*;
-use anchor_lang::{
-    prelude::*,
-    system_program::{transfer, Transfer},
-};
+use anchor_lang::system_program::{transfer, Transfer};
 use anchor_lang::{
     solana_program::{
         program::{invoke, invoke_signed},
@@ -15,10 +12,7 @@ use anchor_lang::{
     },
     system_program,
 };
-use anchor_spl::stake::{
-    deactivate_stake as solana_deactivate_stake, withdraw,
-    DeactivateStake as SolanaDeactivateStake, Stake, StakeAccount, Withdraw,
-};
+use anchor_spl::stake::{Stake, StakeAccount};
 
 #[derive(Accounts)]
 pub struct Bond<'info> {
@@ -54,7 +48,6 @@ pub struct Bond<'info> {
     pub rent_payer: Signer<'info>,
 
     pub clock: Sysvar<'info, Clock>,
-    pub epoch_schedule: Sysvar<'info, EpochSchedule>,
     pub rent: Sysvar<'info, Rent>,
 
     /// CHECK: stake config account
@@ -71,10 +64,9 @@ pub struct Bond<'info> {
 
 impl<'info> Bond<'info> {
     pub fn process(&mut self) -> Result<()> {
-        require_gt!(
-            self.stake_manager.era_process_data.need_bond,
-            0,
-            Errors::EraDoesNotNeedBond
+        require!(
+            self.stake_manager.era_process_data.need_bond(),
+            Errors::EraNoNeedBond
         );
 
         require!(
@@ -147,6 +139,11 @@ impl<'info> Bond<'info> {
         self.stake_manager.era_process_data.need_bond = 0;
         self.stake_manager
             .stake_accounts
+            .push(self.stake_account.key());
+
+        self.stake_manager
+            .era_process_data
+            .pending_stake_accounts
             .push(self.stake_account.key());
 
         Ok(())

@@ -19,13 +19,23 @@ impl<'info> NewEra<'info> {
             Errors::EraIsProcessing
         );
 
-        let (need_bond, need_unbond) = if self.stake_manager.bond > self.stake_manager.unbond {
-            (self.stake_manager.bond - self.stake_manager.unbond, 0)
-        } else {
-            (0, self.stake_manager.unbond - self.stake_manager.bond)
-        };
+        let (need_bond, need_unbond) =
+            if self.stake_manager.era_bond > self.stake_manager.era_unbond {
+                (
+                    self.stake_manager.era_bond - self.stake_manager.era_unbond,
+                    0,
+                )
+            } else {
+                (
+                    0,
+                    self.stake_manager.era_unbond - self.stake_manager.era_bond,
+                )
+            };
 
         self.stake_manager.latest_era = new_era;
+        self.stake_manager.era_bond = 0;
+        self.stake_manager.era_unbond = 0;
+
         self.stake_manager.era_process_data = EraProcessData {
             need_bond,
             need_unbond,

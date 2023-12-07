@@ -62,14 +62,20 @@ pub enum Errors {
     #[msg("Era is processed")]
     EraIsProcessed,
 
-    #[msg("Era does not need bond")]
-    EraDoesNotNeedBond,
+    #[msg("Era no need bond")]
+    EraNoNeedBond,
+
+    #[msg("Era no need unbond")]
+    EraNoNeedUnBond,
+
+    #[msg("Era no need update active")]
+    EraNoNeedUpdateActive,
+
+    #[msg("Era no need update rate")]
+    EraNoNeedUpdateRate,
 
     #[msg("Amount unmatch")]
     AmountUnmatch,
-
-    #[msg("Era does not need unbond")]
-    EraDoesNotNeedUnBond,
 
     #[msg("Invalid unstake account")]
     InvalidUnstakeAccount,
@@ -85,4 +91,10 @@ pub enum Errors {
 
     #[msg("Unstake amount is zero")]
     UnstakeAmountIsZero,
+
+    #[msg("Stake account deactive")]
+    StakeAccountDeActive,
+    
+    #[msg("Validators not equal")]
+    ValidatorsNotEqual,
 }
