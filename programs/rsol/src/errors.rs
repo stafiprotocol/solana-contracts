@@ -47,6 +47,15 @@ pub enum Errors {
     #[msg("Era is latest")]
     EraIsLatest,
 
+    #[msg("Era is processing")]
+    EraIsProcessing,
+
+    #[msg("Era is processed")]
+    EraIsProcessed,
+
+    #[msg("Era does not need bond")]
+    EraDoesNotNeedBond,
+
     #[msg("Invalid unstake account")]
     InvalidUnstakeAccount,
 

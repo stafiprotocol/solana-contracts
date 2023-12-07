@@ -5,6 +5,7 @@ use anchor_spl::stake::{Stake, StakeAccount};
 use anchor_spl::token::{Mint, TokenAccount};
 
 pub use crate::errors::Errors;
+use crate::EraProcessData;
 pub use crate::StakeManager;
 
 #[derive(Accounts)]
@@ -77,6 +78,13 @@ impl<'info> Initialize<'info> {
             validators: vec![initialize_data.validator],
             stake_accounts: vec![],
             split_accounts: vec![],
+            era_process_data: EraProcessData {
+                need_bond: 0,
+                need_unbond: 0,
+                old_active: 0,
+                new_active: 0,
+                pending_stake_accounts: vec![],
+            },
         });
 
         Ok(())
@@ -165,7 +173,7 @@ impl<'info> MigrateStakeAccount<'info> {
             )?;
         }
 
-        // change new staker to target pool
+        // change new staker to stake pool
         invoke(
             &stake::instruction::authorize(
                 self.stake_account.to_account_info().key,
@@ -182,7 +190,7 @@ impl<'info> MigrateStakeAccount<'info> {
             ],
         )?;
 
-        // change new withdrawer to target pool
+        // change new withdrawer to stake pool
         invoke(
             &stake::instruction::authorize(
                 self.stake_account.to_account_info().key,

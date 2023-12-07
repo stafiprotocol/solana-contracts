@@ -27,6 +27,26 @@ pub struct StakeManager {
     pub validators: Vec<Pubkey>,
     pub stake_accounts: Vec<Pubkey>,
     pub split_accounts: Vec<Pubkey>,
+    pub era_process_data: EraProcessData,
+}
+
+#[derive(Clone, Debug, Default, AnchorSerialize, AnchorDeserialize)]
+pub struct EraProcessData {
+    pub need_bond: u64,
+    pub need_unbond: u64,
+    pub old_active: u64,
+    pub new_active: u64,
+    pub pending_stake_accounts: Vec<Pubkey>,
+}
+
+impl EraProcessData {
+    pub fn is_empty(&self) -> bool {
+        return self.need_bond == 0
+            && self.need_unbond == 0
+            && self.old_active == 0
+            && self.new_active == 0
+            && self.pending_stake_accounts.is_empty();
+    }
 }
 
 impl StakeManager {
