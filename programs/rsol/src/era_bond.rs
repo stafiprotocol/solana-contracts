@@ -15,7 +15,7 @@ use anchor_lang::{
 use anchor_spl::stake::{Stake, StakeAccount};
 
 #[derive(Accounts)]
-pub struct Bond<'info> {
+pub struct EraBond<'info> {
     #[account(mut)]
     pub stake_manager: Account<'info, StakeManager>,
 
@@ -62,7 +62,7 @@ pub struct Bond<'info> {
     pub system_program: Program<'info, System>,
 }
 
-impl<'info> Bond<'info> {
+impl<'info> EraBond<'info> {
     pub fn process(&mut self) -> Result<()> {
         require!(
             self.stake_manager.era_process_data.need_bond(),

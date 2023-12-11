@@ -5,7 +5,7 @@ use anchor_lang::solana_program::{program::invoke_signed, stake};
 use anchor_spl::stake::{Stake, StakeAccount};
 
 #[derive(Accounts)]
-pub struct Merge<'info> {
+pub struct EraMerge<'info> {
     #[account(mut)]
     pub stake_manager: Account<'info, StakeManager>,
 
@@ -33,7 +33,7 @@ pub struct Merge<'info> {
     pub stake_program: Program<'info, Stake>,
 }
 
-impl<'info> Merge<'info> {
+impl<'info> EraMerge<'info> {
     pub fn process(&mut self) -> Result<()> {
         require!(
             self.stake_manager.era_process_data.is_empty(),
@@ -68,13 +68,13 @@ impl<'info> Merge<'info> {
         require_eq!(
             src_delegation.deactivation_epoch,
             std::u64::MAX,
-            Errors::StakeAccountDeActive
+            Errors::StakeAccountNotActive
         );
 
         require_eq!(
             dst_delegation.deactivation_epoch,
             std::u64::MAX,
-            Errors::StakeAccountDeActive
+            Errors::StakeAccountNotActive
         );
 
         require_keys_eq!(

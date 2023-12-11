@@ -3,7 +3,7 @@ use anchor_lang::prelude::*;
 use anchor_spl::stake::StakeAccount;
 
 #[derive(Accounts)]
-pub struct UpdateActive<'info> {
+pub struct EraUpdateActive<'info> {
     #[account(mut)]
     pub stake_manager: Account<'info, StakeManager>,
 
@@ -11,7 +11,7 @@ pub struct UpdateActive<'info> {
     pub stake_account: Account<'info, StakeAccount>,
 }
 
-impl<'info> UpdateActive<'info> {
+impl<'info> EraUpdateActive<'info> {
     pub fn process(&mut self) -> Result<()> {
         require!(
             self.stake_manager.era_process_data.need_update_active(),

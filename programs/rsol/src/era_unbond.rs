@@ -13,7 +13,7 @@ use anchor_spl::stake::{
 };
 
 #[derive(Accounts)]
-pub struct UnBond<'info> {
+pub struct EraUnbond<'info> {
     #[account(mut)]
     pub stake_manager: Account<'info, StakeManager>,
 
@@ -55,7 +55,7 @@ pub struct UnBond<'info> {
     pub system_program: Program<'info, System>,
 }
 
-impl<'info> UnBond<'info> {
+impl<'info> EraUnbond<'info> {
     pub fn process(&mut self, unbond_amount: u64) -> Result<()> {
         require!(
             self.stake_manager.era_process_data.need_unbond(),

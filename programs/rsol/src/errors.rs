@@ -20,6 +20,9 @@ pub enum Errors {
     #[msg("Stake account not active")]
     StakeAccountNotActive,
 
+    #[msg("Stake account active")]
+    StakeAccountActive,
+
     #[msg("Stake account with lockup")]
     StakeAccountWithLockup,
 
@@ -92,9 +95,6 @@ pub enum Errors {
     #[msg("Unstake amount is zero")]
     UnstakeAmountIsZero,
 
-    #[msg("Stake account deactive")]
-    StakeAccountDeActive,
-    
     #[msg("Validators not equal")]
     ValidatorsNotEqual,
 }

@@ -187,7 +187,7 @@ impl<'info> Unstake<'info> {
 }
 
 #[derive(Accounts)]
-pub struct Claim<'info> {
+pub struct Withdraw<'info> {
     #[account(mut)]
     pub stake_manager: Account<'info, StakeManager>,
 
@@ -218,7 +218,7 @@ pub struct Claim<'info> {
     pub system_program: Program<'info, System>,
 }
 
-impl<'info> Claim<'info> {
+impl<'info> Withdraw<'info> {
     pub fn process(&mut self) -> Result<()> {
         require_keys_eq!(
             self.unstake_account.stake_manager,

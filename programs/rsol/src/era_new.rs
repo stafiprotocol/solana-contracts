@@ -2,14 +2,14 @@ use crate::{EraProcessData, Errors, StakeManager};
 use anchor_lang::prelude::*;
 
 #[derive(Accounts)]
-pub struct NewEra<'info> {
+pub struct EraNew<'info> {
     #[account(mut)]
     pub stake_manager: Account<'info, StakeManager>,
 
     pub clock: Sysvar<'info, Clock>,
 }
 
-impl<'info> NewEra<'info> {
+impl<'info> EraNew<'info> {
     pub fn process(&mut self) -> Result<()> {
         let new_era = self.stake_manager.latest_era + 1;
 

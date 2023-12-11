@@ -2,12 +2,12 @@ use crate::{Errors, StakeManager};
 use anchor_lang::prelude::*;
 
 #[derive(Accounts)]
-pub struct UpdateRate<'info> {
+pub struct EraUpdateRate<'info> {
     #[account(mut)]
     pub stake_manager: Account<'info, StakeManager>,
 }
 
-impl<'info> UpdateRate<'info> {
+impl<'info> EraUpdateRate<'info> {
     pub fn process(&mut self) -> Result<()> {
         require!(
             self.stake_manager.era_process_data.need_update_rate(),

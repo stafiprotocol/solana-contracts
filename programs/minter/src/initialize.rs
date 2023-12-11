@@ -34,7 +34,7 @@ impl<'info> Initialize<'info> {
             Initialize::find_token_mint_authority(self.minter_address());
 
         msg!(
-            "authority address{}, bump {}",
+            "authority address: {}, bump: {}",
             authority_address,
             authority_bump
         );

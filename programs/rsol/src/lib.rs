@@ -7,6 +7,7 @@ pub mod era_new;
 pub mod era_unbond;
 pub mod era_update_active;
 pub mod era_update_rate;
+pub mod era_withdraw;
 pub mod errors;
 pub mod initialize;
 pub mod staker;
@@ -19,6 +20,7 @@ pub use crate::era_new::*;
 pub use crate::era_unbond::*;
 pub use crate::era_update_active::*;
 pub use crate::era_update_rate::*;
+pub use crate::era_withdraw::*;
 pub use crate::errors::Errors;
 pub use crate::initialize::*;
 pub use crate::staker::*;
@@ -90,7 +92,7 @@ pub mod rsol {
         Ok(())
     }
 
-    pub fn claim(ctx: Context<Claim>) -> Result<()> {
+    pub fn withdraw(ctx: Context<Withdraw>) -> Result<()> {
         check_context(&ctx)?;
 
         ctx.accounts.process()?;
@@ -100,7 +102,7 @@ pub mod rsol {
 
     // era
 
-    pub fn new_era(ctx: Context<NewEra>) -> Result<()> {
+    pub fn era_new(ctx: Context<EraNew>) -> Result<()> {
         check_context(&ctx)?;
 
         ctx.accounts.process()?;
@@ -108,7 +110,7 @@ pub mod rsol {
         Ok(())
     }
 
-    pub fn bond(ctx: Context<Bond>) -> Result<()> {
+    pub fn era_bond(ctx: Context<EraBond>) -> Result<()> {
         check_context(&ctx)?;
 
         ctx.accounts.process()?;
@@ -116,7 +118,7 @@ pub mod rsol {
         Ok(())
     }
 
-    pub fn unbond(ctx: Context<UnBond>, unbond_amount: u64) -> Result<()> {
+    pub fn era_unbond(ctx: Context<EraUnbond>, unbond_amount: u64) -> Result<()> {
         check_context(&ctx)?;
 
         ctx.accounts.process(unbond_amount)?;
@@ -124,7 +126,7 @@ pub mod rsol {
         Ok(())
     }
 
-    pub fn update_active(ctx: Context<UpdateActive>) -> Result<()> {
+    pub fn era_update_active(ctx: Context<EraUpdateActive>) -> Result<()> {
         check_context(&ctx)?;
 
         ctx.accounts.process()?;
@@ -132,7 +134,7 @@ pub mod rsol {
         Ok(())
     }
 
-    pub fn update_rate(ctx: Context<UpdateRate>) -> Result<()> {
+    pub fn era_update_rate(ctx: Context<EraUpdateRate>) -> Result<()> {
         check_context(&ctx)?;
 
         ctx.accounts.process()?;
@@ -140,7 +142,15 @@ pub mod rsol {
         Ok(())
     }
 
-    pub fn merge(ctx: Context<Merge>) -> Result<()> {
+    pub fn era_merge(ctx: Context<EraMerge>) -> Result<()> {
+        check_context(&ctx)?;
+
+        ctx.accounts.process()?;
+
+        Ok(())
+    }
+
+    pub fn era_withdraw(ctx: Context<EraWithdraw>) -> Result<()> {
         check_context(&ctx)?;
 
         ctx.accounts.process()?;
