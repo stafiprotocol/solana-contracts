@@ -3,7 +3,7 @@ use anchor_lang::prelude::*;
 use anchor_lang::{
     solana_program::{
         program::invoke_signed,
-        stake::{self, state::StakeState},
+        stake::{self, state::StakeStateV2},
     },
     system_program,
 };
@@ -33,7 +33,7 @@ pub struct EraUnbond<'info> {
     #[account(
             init,
             payer = rent_payer,
-            space = std::mem::size_of::<StakeState>(),
+            space = std::mem::size_of::<StakeStateV2>(),
             owner = stake::program::ID,
         )]
     pub split_stake_account: Account<'info, StakeAccount>,

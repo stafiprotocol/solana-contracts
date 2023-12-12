@@ -10,6 +10,16 @@ pub struct Initialize<'info> {
     #[account(zero)]
     pub mint_manager: Box<Account<'info, MintManager>>,
 
+    /// CHECK: pda
+    #[account(
+        seeds = [
+            &mint_manager.key().to_bytes(),
+            MintManager::MINT_AUTHORITY_SEED,
+        ],
+        bump,
+    )]
+    pub mint_authority: UncheckedAccount<'info>,
+
     pub rsol_mint: Box<Account<'info, Mint>>,
 
     pub admin: Signer<'info>,
@@ -18,39 +28,20 @@ pub struct Initialize<'info> {
 }
 
 impl<'info> Initialize<'info> {
-    pub fn minter_address(&self) -> &Pubkey {
-        self.mint_manager.to_account_info().key
-    }
-
-    pub fn find_token_mint_authority(minter: &Pubkey) -> (Pubkey, u8) {
-        Pubkey::find_program_address(
-            &[&minter.to_bytes()[..32], MintManager::MINT_AUTHORITY_SEED],
-            &ID,
-        )
-    }
-
-    fn check_token_mint(&mut self) -> Result<u8> {
-        let (authority_address, authority_bump) =
-            Initialize::find_token_mint_authority(self.minter_address());
-
-        msg!(
-            "authority address: {}, bump: {}",
-            authority_address,
-            authority_bump
+    pub fn process(
+        &mut self,
+        ext_mint_authorities: Vec<Pubkey>,
+        mint_authority_seed_bump: u8,
+    ) -> Result<()> {
+        require!(
+            self.rsol_mint.freeze_authority.is_none(),
+            Errors::InvalidTokenAccountData
         );
 
-        if !self.rsol_mint.freeze_authority.is_none() {
-            return err!(Errors::InvalidTokenAccountData);
-        }
-        Ok(authority_bump)
-    }
-
-    pub fn process(&mut self, ext_mint_authorities: Vec<Pubkey>) -> Result<()> {
-        let token_mint_authority_seed_bump = self.check_token_mint()?;
         self.mint_manager.set_inner(MintManager {
             admin: self.admin.key(),
             rsol_mint: self.rsol_mint.key(),
-            mint_authority_seed_bump: token_mint_authority_seed_bump,
+            mint_authority_seed_bump,
             ext_mint_authorities,
         });
         Ok(())

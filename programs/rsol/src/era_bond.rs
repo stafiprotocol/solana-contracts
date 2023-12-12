@@ -6,7 +6,7 @@ use anchor_lang::{
         program::{invoke, invoke_signed},
         stake::{
             self,
-            state::{Authorized, Lockup, StakeState},
+            state::{Authorized, Lockup, StakeStateV2},
         },
         sysvar::stake_history,
     },
@@ -36,7 +36,7 @@ pub struct EraBond<'info> {
     #[account(
         init,
         payer = rent_payer,
-        space = std::mem::size_of::<StakeState>(),
+        space = std::mem::size_of::<StakeStateV2>(),
         owner = stake::program::ID,
     )]
     pub stake_account: Account<'info, StakeAccount>,

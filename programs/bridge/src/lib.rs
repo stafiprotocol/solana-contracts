@@ -1,6 +1,8 @@
 //! stafi solana bridge.
 use anchor_lang::prelude::*;
-use anchor_spl::token::{self, MintTo};
+use anchor_spl::token::{self, spl_token::instruction::AuthorityType};
+use minter::cpi::accounts::MintToken;
+use minter::{self};
 use std::collections::BTreeMap;
 use std::convert::Into;
 
@@ -11,6 +13,8 @@ declare_id!("H3mPx8i41Zn4dLC6ZQRBzNRe1cqYdbcDP1WpojnaiAVo");
 
 #[program]
 pub mod bridge {
+    use anchor_spl::token::{set_authority, SetAuthority};
+
     use super::*;
     // Initializes a new bridge account with a set of owners and a threshold.
     pub fn create_bridge(
@@ -98,6 +102,29 @@ pub mod bridge {
         Ok(())
     }
 
+    pub fn set_mint_authority(
+        ctx: Context<SetMintAuthority>,
+        new_mint_authority: Pubkey,
+    ) -> Result<()> {
+        set_authority(
+            CpiContext::new_with_signer(
+                ctx.accounts.token_program.to_account_info(),
+                SetAuthority {
+                    current_authority: ctx.accounts.bridge_signer.to_account_info(),
+                    account_or_mint: ctx.accounts.mint.to_account_info(),
+                },
+                &[&[
+                    &ctx.accounts.bridge.key().to_bytes(),
+                    &[ctx.accounts.bridge.nonce],
+                ]],
+            ),
+            AuthorityType::MintTokens,
+            Some(new_mint_authority),
+        )?;
+
+        Ok(())
+    }
+
     // Initiates a transfer by creating a deposit account
     pub fn transfer_out(
         ctx: Context<TransferOut>,
@@ -107,8 +134,8 @@ pub mod bridge {
     ) -> Result<()> {
         msg!("stafi: transfer out");
         //check mint
-        let mint_of_from = token::accessor::mint(&ctx.accounts.from)?;
-        if mint_of_from != *ctx.accounts.mint.key {
+        let mint_of_from = token::accessor::mint(&ctx.accounts.from.to_account_info())?;
+        if mint_of_from != ctx.accounts.mint.key() {
             return err!(Errors::InvalidFromAccount);
         }
 
@@ -153,9 +180,9 @@ pub mod bridge {
                     fee,
                 ),
                 &[
-                    ctx.accounts.authority.clone(),
-                    ctx.accounts.fee_receiver.clone(),
-                    ctx.accounts.system_program.clone(),
+                    ctx.accounts.authority.to_account_info(),
+                    ctx.accounts.fee_receiver.to_account_info(),
+                    ctx.accounts.system_program.to_account_info(),
                 ],
             )?;
         }
@@ -172,7 +199,7 @@ pub mod bridge {
 
         // emit log data
         emit!(EventTransferOut {
-            transfer: *ctx.accounts.from.key,
+            transfer: ctx.accounts.from.key(),
             receiver: receiver,
             amount: amount,
             dest_chain_id: dest_chain_id,
@@ -211,13 +238,13 @@ pub mod bridge {
         };
 
         // check token account mint info
-        let mint_info = token::accessor::mint(&ctx.accounts.to)?;
+        let mint_info = token::accessor::mint(&ctx.accounts.to.to_account_info())?;
         if *mint != mint_info {
             return err!(Errors::InvalidMintAccount);
         }
 
         p.mint = *mint;
-        p.to = *ctx.accounts.to.key;
+        p.to = ctx.accounts.to.key();
         p.amount = amount;
         p.token_program = token_program;
         p.signers = signers;
@@ -260,28 +287,31 @@ pub mod bridge {
             return err!(Errors::AlreadyExecuted);
         }
 
-        if ctx.accounts.proposal.mint != *ctx.accounts.mint.key {
+        if ctx.accounts.proposal.mint != ctx.accounts.mint.key() {
             return err!(Errors::InvalidMintAccount);
         }
-        if ctx.accounts.proposal.to != *ctx.accounts.to.key {
+        if ctx.accounts.proposal.to != ctx.accounts.to.key() {
             return err!(Errors::InvalidToAccount);
         }
 
         // Execute the mint proposal signed by the bridge.
-        let amount = ctx.accounts.proposal.amount;
-        let cpi_accounts = MintTo {
-            mint: ctx.accounts.mint.clone(),
-            to: ctx.accounts.to.clone(),
-            authority: ctx.accounts.bridge_signer.clone(),
+        let cpi_program = ctx.accounts.minter_program.to_account_info();
+        let cpi_accounts = MintToken {
+            mint_manager: ctx.accounts.mint_manager.to_account_info(),
+            rsol_mint: ctx.accounts.mint.to_account_info(),
+            mint_to: ctx.accounts.to.to_account_info(),
+            mint_authority: ctx.accounts.mint_authority.to_account_info(),
+            ext_mint_authority: ctx.accounts.bridge_signer.to_account_info(),
+            token_program: ctx.accounts.token_program.to_account_info(),
         };
-        let cpi_program = ctx.accounts.token_program.clone();
-        let seeds = &[
-            ctx.accounts.bridge.to_account_info().key.as_ref(),
-            &[ctx.accounts.bridge.nonce],
-        ];
-        let signer = &[&seeds[..]];
-        let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer);
-        token::mint_to(cpi_ctx, amount)?;
+        minter::cpi::mint_token(
+            CpiContext::new(cpi_program, cpi_accounts).with_signer(&[&[
+                &ctx.accounts.bridge.key().to_bytes(),
+                &[ctx.accounts.bridge.nonce],
+            ]]),
+            ctx.accounts.proposal.amount,
+        )?;
+
         // Burn the mint proposal to ensure one time use.
         ctx.accounts.proposal.did_execute = true;
         msg!("stafi: approve and execute proposal ok");

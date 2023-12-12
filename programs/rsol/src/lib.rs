@@ -26,7 +26,7 @@ pub use crate::initialize::*;
 pub use crate::staker::*;
 pub use crate::states::*;
 
-declare_id!("47pM7t6NrHmmrkrnnpr1FfVYNHCohVsStaAsdaqYsxEV");
+declare_id!("5N1PkgbPx5Qs3eGaJre16AHsNMRPYM9JSwxXDG83tWX9");
 
 fn check_context<T: Bumps>(ctx: &Context<T>) -> Result<()> {
     if !check_id(ctx.program_id) {

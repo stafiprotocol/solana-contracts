@@ -18,14 +18,14 @@ impl<'info> TransferAdmin<'info> {
 }
 
 #[derive(Accounts)]
-pub struct SetMintAuthorities<'info> {
+pub struct SetExtMintAuthorities<'info> {
     #[account(mut, has_one = admin @ Errors::AdminNotMatch)]
     pub mint_manager: Box<Account<'info, MintManager>>,
 
     pub admin: Signer<'info>,
 }
 
-impl<'info> SetMintAuthorities<'info> {
+impl<'info> SetExtMintAuthorities<'info> {
     pub fn process(&mut self, ext_mint_authorities: Vec<Pubkey>) -> Result<()> {
         self.mint_manager.ext_mint_authorities = ext_mint_authorities;
         Ok(())

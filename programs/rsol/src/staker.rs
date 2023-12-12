@@ -13,13 +13,13 @@ pub struct Stake<'info> {
     pub stake_manager: Account<'info, StakeManager>,
 
     #[account(
-            mut,
-            seeds = [
-                &stake_manager.key().to_bytes(),
-                StakeManager::POOL_SEED,
-            ],
-            bump = stake_manager.pool_seed_bump
-        )]
+        mut,
+        seeds = [
+            &stake_manager.key().to_bytes(),
+            StakeManager::POOL_SEED,
+        ],
+        bump = stake_manager.pool_seed_bump
+    )]
     pub stake_pool: SystemAccount<'info>,
 
     #[account(
@@ -39,14 +39,7 @@ pub struct Stake<'info> {
     )]
     pub mint_to: Box<Account<'info, TokenAccount>>,
 
-    /// CHECK: pda
-    #[account(
-        seeds = [
-            &mint_manager.key().to_bytes(),
-            MintManager::MINT_AUTHORITY_SEED
-        ],
-        bump = mint_manager.mint_authority_seed_bump
-    )]
+    /// CHECK:  check on minter program
     pub mint_authority: UncheckedAccount<'info>,
 
     pub minter_program: Program<'info, Minter>,
@@ -93,7 +86,11 @@ impl<'info> Stake<'info> {
             token_program: self.token_program.to_account_info(),
         };
         minter::cpi::mint_token(
-            CpiContext::new(cpi_program, cpi_accounts).with_signer(&[&[][..]]),
+            CpiContext::new(cpi_program, cpi_accounts).with_signer(&[&[
+                &self.stake_manager.key().to_bytes(),
+                StakeManager::POOL_SEED,
+                &[self.stake_manager.pool_seed_bump],
+            ]]),
             rsol_amount,
         )?;
 

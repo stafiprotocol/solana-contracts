@@ -12,7 +12,7 @@ pub use crate::initialize::*;
 pub use crate::mint::*;
 pub use crate::states::*;
 
-declare_id!("47pM7t6NrHmmrkrnnpr1FfVYNHCohVsStaAsdaqYsxEV");
+declare_id!("HDb577JnkPHLFpfbTg1ncX9jmVHGjzX6S9bgZvNnXjVj");
 
 fn check_context<T: Bumps>(ctx: &Context<T>) -> Result<()> {
     if !check_id(ctx.program_id) {
@@ -33,7 +33,8 @@ pub mod minter {
     pub fn initialize(ctx: Context<Initialize>, ext_mint_authorities: Vec<Pubkey>) -> Result<()> {
         check_context(&ctx)?;
 
-        ctx.accounts.process(ext_mint_authorities)?;
+        ctx.accounts
+            .process(ext_mint_authorities, ctx.bumps.mint_authority)?;
 
         Ok(())
     }
@@ -46,8 +47,8 @@ pub mod minter {
         Ok(())
     }
 
-    pub fn set_mint_authorities(
-        ctx: Context<Initialize>,
+    pub fn set_ext_mint_authorities(
+        ctx: Context<SetExtMintAuthorities>,
         ext_mint_authorities: Vec<Pubkey>,
     ) -> Result<()> {
         check_context(&ctx)?;

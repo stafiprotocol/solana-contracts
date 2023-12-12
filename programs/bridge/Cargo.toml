@@ -18,4 +18,6 @@ default = []
 anchor-lang = "0.29.0"
 anchor-spl = { version = "0.29.0", default-features = false, features = [
     "token",
+    "spl-token",
 ] }
+minter = { path = "../minter", features = ["cpi"] }

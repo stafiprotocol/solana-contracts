@@ -1,16 +1,37 @@
 use anchor_lang::prelude::*;
+use anchor_lang::solana_program::system_program;
 use anchor_spl::token::Burn;
+use anchor_spl::token::{Mint, Token, TokenAccount};
+use minter::program::Minter;
+use minter::{self, MintManager};
 use std::collections::BTreeMap;
 use std::convert::Into;
-
 #[derive(Accounts)]
 pub struct AdminAuth<'info> {
-    #[account(mut)]
+    #[account(mut,has_one = admin @ Errors::AdminNotMatch)]
     pub bridge: Box<Account<'info, Bridge>>,
 
-    /// CHECK: old version
-    #[account(signer, constraint = &bridge.admin == admin.key)]
-    pub admin: AccountInfo<'info>,
+    pub admin: Signer<'info>,
+}
+
+#[derive(Accounts)]
+pub struct SetMintAuthority<'info> {
+    #[account(mut,has_one = admin @ Errors::AdminNotMatch)]
+    pub bridge: Box<Account<'info, Bridge>>,
+
+    pub admin: Signer<'info>,
+
+    /// CHECK: pda
+    #[account(
+        seeds = [bridge.to_account_info().key.as_ref()],
+        bump = bridge.nonce,
+    )]
+    pub bridge_signer: UncheckedAccount<'info>,
+
+    #[account(mut)]
+    pub mint: Box<Account<'info, Mint>>,
+
+    pub token_program: Program<'info, Token>,
 }
 
 #[derive(Accounts)]
@@ -24,28 +45,24 @@ pub struct CreateBridge<'info> {
 pub struct TransferOut<'info> {
     #[account(mut)]
     pub bridge: Box<Account<'info, Bridge>>,
-    //token account's owner
-    /// CHECK: old version
+
+    /// CHECK: token account's owner
     #[account(signer, mut)]
-    pub authority: AccountInfo<'info>,
+    pub authority: UncheckedAccount<'info>,
 
-    /// CHECK: old version
     #[account(mut)]
-    pub mint: AccountInfo<'info>,
+    pub mint: Box<Account<'info, Mint>>,
 
-    /// CHECK: old version
     #[account(mut)]
-    pub from: AccountInfo<'info>,
+    pub from: Box<Account<'info, TokenAccount>>,
 
-    /// CHECK: old version
+    /// CHECK: fee receiver
     #[account(mut)]
-    pub fee_receiver: AccountInfo<'info>,
+    pub fee_receiver: UncheckedAccount<'info>,
 
-    /// CHECK: old version
-    pub token_program: AccountInfo<'info>,
+    pub token_program: Program<'info, Token>,
 
-    /// CHECK: old version
-    pub system_program: AccountInfo<'info>,
+    pub system_program: Program<'info, System>,
 }
 
 #[derive(Accounts)]
@@ -55,13 +72,13 @@ pub struct CreateMintProposal<'info> {
     pub proposal: Box<Account<'info, MintProposal>>,
 
     // token account which has been initiated
-    /// CHECK: old version
-    pub to: AccountInfo<'info>,
+    pub to: Box<Account<'info, TokenAccount>>,
 
     // One of the owners. Checked in the handler.
-    /// CHECK: old version
-    #[account(signer)]
-    pub proposer: AccountInfo<'info>,
+    #[account(
+        owner = system_program::ID
+    )]
+    pub proposer: Signer<'info>,
     pub rent: Sysvar<'info, Rent>,
 }
 
@@ -70,31 +87,39 @@ pub struct Approve<'info> {
     #[account(constraint = bridge.owner_set_seqno == proposal.owner_set_seqno)]
     pub bridge: Box<Account<'info, Bridge>>,
 
-    /// CHECK: old version
+    /// CHECK: pda
     #[account(
         seeds = [bridge.to_account_info().key.as_ref()],
         bump = bridge.nonce,
     )]
-    pub bridge_signer: AccountInfo<'info>,
+    pub bridge_signer: UncheckedAccount<'info>,
+
     #[account(mut, has_one = bridge)]
     pub proposal: Box<Account<'info, MintProposal>>,
 
     // One of the bridge owners. Checked in the handler.
-    /// CHECK: old version
-    #[account(signer)]
-    pub approver: AccountInfo<'info>,
+    #[account(
+        owner = system_program::ID
+    )]
+    pub approver: Signer<'info>,
 
-    /// CHECK: old version
     #[account(mut)]
-    pub mint: AccountInfo<'info>,
+    pub mint: Box<Account<'info, Mint>>,
 
     // token account which has been initiated
-    /// CHECK: old version
-    #[account(mut)]
-    pub to: AccountInfo<'info>,
+    #[account(
+        mut,
+        token::mint = mint_manager.rsol_mint
+    )]
+    pub to: Box<Account<'info, TokenAccount>>,
 
-    /// CHECK: old version
-    pub token_program: AccountInfo<'info>,
+    pub mint_manager: Box<Account<'info, MintManager>>,
+
+    /// CHECK:  check on minter program
+    pub mint_authority: UncheckedAccount<'info>,
+
+    pub minter_program: Program<'info, Minter>,
+    pub token_program: Program<'info, Token>,
 }
 
 #[account]
@@ -175,11 +200,11 @@ impl<'a, 'b, 'c, 'info> From<&mut TransferOut<'info>>
 {
     fn from(accounts: &mut TransferOut<'info>) -> CpiContext<'a, 'b, 'c, 'info, Burn<'info>> {
         let cpi_accounts = Burn {
-            mint: accounts.mint.clone(),
-            from: accounts.from.clone(),
-            authority: accounts.authority.clone(),
+            mint: accounts.mint.to_account_info(),
+            from: accounts.from.to_account_info(),
+            authority: accounts.authority.to_account_info(),
         };
-        let cpi_program = accounts.token_program.clone();
+        let cpi_program = accounts.token_program.to_account_info();
         CpiContext::new(cpi_program, cpi_accounts)
     }
 }
@@ -202,24 +227,26 @@ pub enum Errors {
     AlreadyExecuted,
     #[msg("Threshold must be less than or equal to the number of owners.")]
     InvalidThreshold,
-    #[msg("program id account data must have same length")]
+    #[msg("Program id account data must have same length")]
     ParamLength,
-    #[msg("chain id not support")]
+    #[msg("Chain id not support")]
     NotSupportChainId,
-    #[msg("chain id exist")]
+    #[msg("Chain id exist")]
     ChainIdExist,
-    #[msg("chain id not exist")]
+    #[msg("Chain id not exist")]
     ChainIdNotExist,
-    #[msg("resource id not found")]
+    #[msg("Resource id not found")]
     InvalidResourceId,
-    #[msg("mint account not match proposal's mint")]
+    #[msg("Mint account not match proposal's mint")]
     InvalidMintAccount,
-    #[msg("to account not match proposal's to")]
+    #[msg("To account not match proposal's to")]
     InvalidToAccount,
-    #[msg("from account invalid")]
+    #[msg("From account invalid")]
     InvalidFromAccount,
-    #[msg("invalid fee receiver")]
+    #[msg("Invalid fee receiver")]
     InvalidFeeReceiver,
-    #[msg("not support mint type")]
+    #[msg("Not support mint type")]
     NotSupportMintType,
+    #[msg("Admin not match")]
+    AdminNotMatch,
 }
