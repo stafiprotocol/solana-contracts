@@ -18,24 +18,23 @@ pub struct EraUnbond<'info> {
     pub stake_manager: Account<'info, StakeManager>,
 
     #[account(
-        mut,
         seeds = [
             &stake_manager.key().to_bytes(),
             StakeManager::POOL_SEED
             ],
             bump = stake_manager.pool_seed_bump
-        )]
+    )]
     pub stake_pool: SystemAccount<'info>,
 
     #[account(mut)]
     pub stake_account: Account<'info, StakeAccount>,
 
     #[account(
-            init,
-            payer = rent_payer,
-            space = std::mem::size_of::<StakeStateV2>(),
-            owner = stake::program::ID,
-        )]
+        init,
+        payer = rent_payer,
+        space = std::mem::size_of::<StakeStateV2>(),
+        owner = stake::program::ID,
+    )]
     pub split_stake_account: Account<'info, StakeAccount>,
 
     /// CHECK: validator account

@@ -24,12 +24,12 @@ pub struct EraBond<'info> {
     pub validator: UncheckedAccount<'info>,
 
     #[account(
-    mut,
-    seeds = [
-        &stake_manager.key().to_bytes(),
-        StakeManager::POOL_SEED
-    ],
-    bump = stake_manager.pool_seed_bump
+        mut,
+        seeds = [
+            &stake_manager.key().to_bytes(),
+            StakeManager::POOL_SEED
+        ],
+        bump = stake_manager.pool_seed_bump
     )]
     pub stake_pool: SystemAccount<'info>,
 

@@ -11,6 +11,9 @@ pub enum Errors {
     #[msg("Admin not match")]
     AdminNotMatch,
 
+    #[msg("Initialize data not match")]
+    InitializeDataMatch,
+
     #[msg("Fee recipient not match")]
     FeeRecipientNotMatch,
 

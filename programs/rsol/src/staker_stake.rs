@@ -95,6 +95,8 @@ impl<'info> Stake<'info> {
             rsol_amount,
         )?;
 
+        self.stake_manager.total_rsol_supply += rsol_amount;
+
         Ok(())
     }
 }

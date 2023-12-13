@@ -8,7 +8,7 @@ use std::collections::BTreeMap;
 use std::convert::Into;
 #[derive(Accounts)]
 pub struct AdminAuth<'info> {
-    #[account(mut,has_one = admin @ Errors::AdminNotMatch)]
+    #[account(mut, has_one = admin @ Errors::AdminNotMatch)]
     pub bridge: Box<Account<'info, Bridge>>,
 
     pub admin: Signer<'info>,
@@ -16,14 +16,14 @@ pub struct AdminAuth<'info> {
 
 #[derive(Accounts)]
 pub struct SetMintAuthority<'info> {
-    #[account(mut,has_one = admin @ Errors::AdminNotMatch)]
+    #[account(has_one = admin @ Errors::AdminNotMatch)]
     pub bridge: Box<Account<'info, Bridge>>,
 
     pub admin: Signer<'info>,
 
     /// CHECK: pda
     #[account(
-        seeds = [bridge.to_account_info().key.as_ref()],
+        seeds = [&bridge.key().to_bytes()],
         bump = bridge.nonce,
     )]
     pub bridge_signer: UncheckedAccount<'info>,
@@ -89,7 +89,7 @@ pub struct Approve<'info> {
 
     /// CHECK: pda
     #[account(
-        seeds = [bridge.to_account_info().key.as_ref()],
+        seeds = [&bridge.key().to_bytes()],
         bump = bridge.nonce,
     )]
     pub bridge_signer: UncheckedAccount<'info>,

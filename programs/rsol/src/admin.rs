@@ -15,3 +15,31 @@ impl<'info> TransferAdmin<'info> {
         Ok(())
     }
 }
+
+#[derive(Accounts)]
+pub struct SetMinStakeAmount<'info> {
+    #[account(mut,has_one = admin @ Errors::AdminNotMatch)]
+    pub stake_manager: Account<'info, StakeManager>,
+    pub admin: Signer<'info>,
+}
+
+impl<'info> SetMinStakeAmount<'info> {
+    pub fn process(&mut self, amount: u64) -> Result<()> {
+        self.stake_manager.min_stake_amount = amount;
+        Ok(())
+    }
+}
+
+#[derive(Accounts)]
+pub struct SetUnbondingDuration<'info> {
+    #[account(mut,has_one = admin @ Errors::AdminNotMatch)]
+    pub stake_manager: Account<'info, StakeManager>,
+    pub admin: Signer<'info>,
+}
+
+impl<'info> SetUnbondingDuration<'info> {
+    pub fn process(&mut self, duration: u64) -> Result<()> {
+        self.stake_manager.unbonding_duration = duration;
+        Ok(())
+    }
+}

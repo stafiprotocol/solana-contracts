@@ -9,7 +9,7 @@ use std::convert::Into;
 mod state;
 pub use crate::state::*;
 
-declare_id!("H3mPx8i41Zn4dLC6ZQRBzNRe1cqYdbcDP1WpojnaiAVo");
+declare_id!("GF5hXVTvkErn2LTL5myFVbgqPXHnZYj2CkVGU6ZTEtyK");
 
 #[program]
 pub mod bridge {

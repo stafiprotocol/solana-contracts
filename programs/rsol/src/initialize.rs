@@ -57,6 +57,13 @@ impl<'info> Initialize<'info> {
             Errors::RentNotEnough
         );
 
+        require_eq!(
+            initialize_data.rate,
+            self.stake_manager
+                .calc_rate(initialize_data.active, initialize_data.total_rsol_supply)?,
+            Errors::InitializeDataMatch
+        );
+
         self.stake_manager.set_inner(StakeManager {
             admin: self.admin.key(),
             rsol_mint: initialize_data.rsol_mint,
@@ -69,7 +76,7 @@ impl<'info> Initialize<'info> {
             rate_change_limit: StakeManager::DEFAULT_RATE_CHANGE_LIMIT,
             unbonding_duration: StakeManager::DEFAULT_UNBONDING_DURATION,
             latest_era: initialize_data.latest_era,
-            rate: StakeManager::CAL_BASE,
+            rate: initialize_data.rate,
             total_rsol_supply: initialize_data.total_rsol_supply,
             total_protocol_fee: initialize_data.total_protocol_fee,
             era_bond: initialize_data.bond,
@@ -97,7 +104,6 @@ pub struct MigrateStakeAccount<'info> {
     pub stake_manager: Account<'info, StakeManager>,
 
     #[account(
-        mut,
         seeds = [
             &stake_manager.key().to_bytes(),
             StakeManager::POOL_SEED,
@@ -108,6 +114,7 @@ pub struct MigrateStakeAccount<'info> {
 
     #[account(mut)]
     pub stake_account: Box<Account<'info, StakeAccount>>,
+
     pub stake_authority: Signer<'info>,
 
     pub stake_program: Program<'info, Stake>,

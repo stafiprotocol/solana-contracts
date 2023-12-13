@@ -9,16 +9,6 @@ pub struct Unstake<'info> {
     #[account(mut, has_one = fee_recipient @ Errors::FeeRecipientNotMatch)]
     pub stake_manager: Box<Account<'info, StakeManager>>,
 
-    #[account(
-        mut,
-        seeds = [
-            &stake_manager.key().to_bytes(),
-            StakeManager::POOL_SEED,
-        ],
-        bump = stake_manager.pool_seed_bump
-    )]
-    pub stake_pool: SystemAccount<'info>,
-
     #[account(mut)]
     pub rsol_mint: Box<Account<'info, Mint>>,
 
@@ -28,7 +18,7 @@ pub struct Unstake<'info> {
     )]
     pub burn_rsol_from: Box<Account<'info, TokenAccount>>,
 
-    pub rsol_authority: Signer<'info>,
+    pub burn_rsol_authority: Signer<'info>,
 
     #[account(
         zero,
@@ -51,14 +41,14 @@ impl<'info> Unstake<'info> {
         if self
             .burn_rsol_from
             .delegate
-            .contains(self.rsol_authority.key)
+            .contains(self.burn_rsol_authority.key)
         {
             require_gte!(
                 self.burn_rsol_from.delegated_amount,
                 unstake_amount,
                 Errors::BalanceNotEnough
             );
-        } else if *self.rsol_authority.key == self.burn_rsol_from.owner {
+        } else if *self.burn_rsol_authority.key == self.burn_rsol_from.owner {
             require_gte!(
                 self.burn_rsol_from.amount,
                 unstake_amount,
@@ -79,7 +69,7 @@ impl<'info> Unstake<'info> {
                     TransferToken {
                         from: self.burn_rsol_from.to_account_info(),
                         to: self.fee_recipient.to_account_info(),
-                        authority: self.rsol_authority.to_account_info(),
+                        authority: self.burn_rsol_authority.to_account_info(),
                     },
                 ),
                 unstake_fee,
@@ -87,22 +77,24 @@ impl<'info> Unstake<'info> {
             self.stake_manager.total_protocol_fee += unstake_fee;
         }
 
-        self.stake_manager.era_unbond += unbond_amount;
-        self.stake_manager.active -= unbond_amount;
+        let sol_amount = self.stake_manager.calc_sol_amount(unbond_amount)?;
+        self.stake_manager.era_unbond += sol_amount;
+        self.stake_manager.active -= sol_amount;
 
         // burn rsol
-        let sol_amount = self.stake_manager.calc_sol_amount(unbond_amount)?;
         burn(
             CpiContext::new(
                 self.token_program.to_account_info(),
                 Burn {
                     mint: self.rsol_mint.to_account_info(),
                     from: self.burn_rsol_from.to_account_info(),
-                    authority: self.rsol_authority.to_account_info(),
+                    authority: self.burn_rsol_authority.to_account_info(),
                 },
             ),
             unbond_amount,
         )?;
+
+        self.stake_manager.total_rsol_supply -= unbond_amount;
 
         self.unstake_account.set_inner(UnstakeAccount {
             stake_manager: self.stake_manager.key(),

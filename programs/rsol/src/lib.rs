@@ -78,6 +78,22 @@ pub mod rsol {
         Ok(())
     }
 
+    pub fn set_min_stake_amount(ctx: Context<SetMinStakeAmount>, amount: u64) -> Result<()> {
+        check_context(&ctx)?;
+
+        ctx.accounts.process(amount)?;
+
+        Ok(())
+    }
+
+    pub fn set_unbonding_duration(ctx: Context<SetUnbondingDuration>, duration: u64) -> Result<()> {
+        check_context(&ctx)?;
+
+        ctx.accounts.process(duration)?;
+
+        Ok(())
+    }
+
     // staker
 
     pub fn stake(ctx: Context<Stake>, stake_amount: u64) -> Result<()> {

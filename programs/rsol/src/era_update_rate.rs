@@ -11,7 +11,6 @@ pub struct EraUpdateRate<'info> {
     pub stake_manager: Account<'info, StakeManager>,
 
     #[account(
-        mut,
         seeds = [
             &stake_manager.key().to_bytes(),
             StakeManager::POOL_SEED,
