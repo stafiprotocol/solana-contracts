@@ -56,16 +56,10 @@ pub struct EraUnbond<'info> {
 }
 
 impl<'info> EraUnbond<'info> {
-    pub fn process(&mut self, unbond_amount: u64) -> Result<()> {
+    pub fn process(&mut self) -> Result<()> {
         require!(
             self.stake_manager.era_process_data.need_unbond(),
             Errors::EraNoNeedUnBond
-        );
-
-        require_gte!(
-            self.stake_manager.era_process_data.need_unbond,
-            unbond_amount,
-            Errors::AmountUnmatch
         );
 
         require!(
@@ -99,9 +93,9 @@ impl<'info> EraUnbond<'info> {
             Errors::ValidatorNotMatch
         );
 
-        require_gte!(delegation.stake, unbond_amount, Errors::BalanceNotEnough);
+        let total_need_unbond = self.stake_manager.era_process_data.need_unbond;
 
-        if delegation.stake == unbond_amount {
+        if delegation.stake <= total_need_unbond {
             solana_deactivate_stake(CpiContext::new_with_signer(
                 self.stake_program.to_account_info(),
                 SolanaDeactivateStake {
@@ -124,11 +118,13 @@ impl<'info> EraUnbond<'info> {
                 .era_process_data
                 .pending_stake_accounts
                 .retain(|&e| e != self.stake_account.key());
+
+            self.stake_manager.era_process_data.need_unbond -= delegation.stake;
         } else {
             let split_instruction = stake::instruction::split(
                 self.stake_account.to_account_info().key,
                 self.stake_pool.key,
-                unbond_amount,
+                total_need_unbond,
                 &self.split_stake_account.key(),
             )
             .last()
@@ -167,9 +163,9 @@ impl<'info> EraUnbond<'info> {
             self.stake_manager
                 .split_accounts
                 .push(self.split_stake_account.key());
-        }
 
-        self.stake_manager.era_process_data.need_unbond -= unbond_amount;
+            self.stake_manager.era_process_data.need_unbond -= total_need_unbond;
+        }
 
         Ok(())
     }

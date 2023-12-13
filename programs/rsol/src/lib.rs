@@ -10,7 +10,9 @@ pub mod era_update_rate;
 pub mod era_withdraw;
 pub mod errors;
 pub mod initialize;
-pub mod staker;
+pub mod staker_stake;
+pub mod staker_unstake;
+pub mod staker_withdraw;
 pub mod states;
 
 pub use crate::admin::*;
@@ -23,7 +25,9 @@ pub use crate::era_update_rate::*;
 pub use crate::era_withdraw::*;
 pub use crate::errors::Errors;
 pub use crate::initialize::*;
-pub use crate::staker::*;
+pub use crate::staker_stake::*;
+pub use crate::staker_unstake::*;
+pub use crate::staker_withdraw::*;
 pub use crate::states::*;
 
 declare_id!("5N1PkgbPx5Qs3eGaJre16AHsNMRPYM9JSwxXDG83tWX9");
@@ -118,10 +122,10 @@ pub mod rsol {
         Ok(())
     }
 
-    pub fn era_unbond(ctx: Context<EraUnbond>, unbond_amount: u64) -> Result<()> {
+    pub fn era_unbond(ctx: Context<EraUnbond>) -> Result<()> {
         check_context(&ctx)?;
 
-        ctx.accounts.process(unbond_amount)?;
+        ctx.accounts.process()?;
 
         Ok(())
     }

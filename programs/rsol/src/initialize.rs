@@ -69,7 +69,7 @@ impl<'info> Initialize<'info> {
             rate_change_limit: StakeManager::DEFAULT_RATE_CHANGE_LIMIT,
             unbonding_duration: StakeManager::DEFAULT_UNBONDING_DURATION,
             latest_era: initialize_data.latest_era,
-            rate: StakeManager::RATE_BASE,
+            rate: StakeManager::CAL_BASE,
             total_rsol_supply: initialize_data.total_rsol_supply,
             total_protocol_fee: initialize_data.total_protocol_fee,
             era_bond: initialize_data.bond,

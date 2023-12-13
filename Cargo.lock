@@ -557,7 +557,7 @@ checksum = "965ab7eb5f8f97d2a083c799f3a1b994fc397b2fe2da5d1da1626ce15a39f2b1"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.39",
+ "syn 2.0.40",
 ]
 
 [[package]]
@@ -906,9 +906,9 @@ checksum = "e2abad23fbc42b3700f2f279844dc832adb2b2eb069b2df918f455c4e18cc646"
 
 [[package]]
 name = "libc"
-version = "0.2.150"
+version = "0.2.151"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "89d92a4743f9a61002fae18374ed11e7973f530cb3a3255fb354818118b2203c"
+checksum = "302d7ab3130588088d277783b1e2d2e10c9e9e4a16dd9050e6ec93fb3e7048f4"
 
 [[package]]
 name = "libsecp256k1"
@@ -1077,7 +1077,7 @@ dependencies = [
  "proc-macro-crate 1.3.1",
  "proc-macro2",
  "quote",
- "syn 2.0.39",
+ "syn 2.0.40",
 ]
 
 [[package]]
@@ -1356,7 +1356,7 @@ checksum = "43576ca501357b9b071ac53cdc7da8ef0cbd9493d8df094cd821777ea6e894d3"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.39",
+ "syn 2.0.40",
 ]
 
 [[package]]
@@ -1422,9 +1422,9 @@ checksum = "4dccd0940a2dcdf68d092b8cbab7dc0ad8fa938bf95787e1b916b0e3d0e8e970"
 
 [[package]]
 name = "solana-frozen-abi"
-version = "1.17.8"
+version = "1.17.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2a6f2ae6f1432326ad81eec44f791bb35b5b33c16c18a8ef1f6aabd67cb354d2"
+checksum = "3392accc42141b4a059942b8dccc7597cad8ab1975f7920321e6b4716f778cf7"
 dependencies = [
  "ahash 0.8.6",
  "blake3",
@@ -1452,21 +1452,21 @@ dependencies = [
 
 [[package]]
 name = "solana-frozen-abi-macro"
-version = "1.17.8"
+version = "1.17.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "861202e87b7ebd2bb929cb68fea6f4ddcc424adce01c0e60514847d7ec4524f1"
+checksum = "49b164b02a08299113aa7cc34beaa2f85eb5528f427f964be17383d7631dc168"
 dependencies = [
  "proc-macro2",
  "quote",
  "rustc_version",
- "syn 2.0.39",
+ "syn 2.0.40",
 ]
 
 [[package]]
 name = "solana-program"
-version = "1.17.8"
+version = "1.17.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "af479d84b889c3f5f7ea941af2246d462bb8808bd5757eaeb741eb4b93d566a2"
+checksum = "500718eb4e0b133f4999c875bda6d1d097d1ca85e7ae0ee8151faa0b08431dbc"
 dependencies = [
  "ark-bn254",
  "ark-ec",
@@ -1518,15 +1518,15 @@ dependencies = [
 
 [[package]]
 name = "solana-sdk-macro"
-version = "1.17.8"
+version = "1.17.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "677d2dc1bb2f24d0998f44c8c6511250a8005f504c29a6ccbf874fcee5a8ade7"
+checksum = "cf8c30dd6cad535154b9e143f3dfeab3bcac5fdfd0c732445012c1e2a0342981"
 dependencies = [
  "bs58 0.4.0",
  "proc-macro2",
  "quote",
  "rustversion",
- "syn 2.0.39",
+ "syn 2.0.40",
 ]
 
 [[package]]
@@ -1563,9 +1563,9 @@ dependencies = [
 
 [[package]]
 name = "syn"
-version = "2.0.39"
+version = "2.0.40"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "23e78b90f2fcf45d3e842032ce32e3f2d1545ba6636271dcbf24fa306d87be7a"
+checksum = "13fa70a4ee923979ffb522cacce59d34421ebdea5625e1073c4326ef9d2dd42e"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1589,7 +1589,7 @@ checksum = "266b2e40bc00e5a6c09c3584011e08b06f123c00362c92b975ba9843aaaa14b8"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.39",
+ "syn 2.0.40",
 ]
 
 [[package]]
@@ -1718,7 +1718,7 @@ dependencies = [
  "once_cell",
  "proc-macro2",
  "quote",
- "syn 2.0.39",
+ "syn 2.0.40",
  "wasm-bindgen-shared",
 ]
 
@@ -1740,7 +1740,7 @@ checksum = "f0eb82fcb7930ae6219a7ecfd55b217f5f0893484b7a13022ebb2b2bf20b5283"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.39",
+ "syn 2.0.40",
  "wasm-bindgen-backend",
  "wasm-bindgen-shared",
 ]
@@ -1820,9 +1820,9 @@ checksum = "ed94fce61571a4006852b7389a063ab983c02eb1bb37b47f8272ce92d06d9538"
 
 [[package]]
 name = "winnow"
-version = "0.5.26"
+version = "0.5.28"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b67b5f0a4e7a27a64c651977932b9dc5667ca7fc31ac44b03ed37a0cf42fdfff"
+checksum = "6c830786f7720c2fd27a1a0e27a709dbd3c4d009b56d098fc742d4f4eab91fe2"
 dependencies = [
  "memchr",
 ]
@@ -1844,7 +1844,7 @@ checksum = "be912bf68235a88fbefd1b73415cb218405958d1655b2ece9035a19920bdf6ba"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.39",
+ "syn 2.0.40",
 ]
 
 [[package]]
@@ -1864,5 +1864,5 @@ checksum = "ce36e65b0d2999d2aafac989fb249189a141aee1f53c612c1f37d72631959f69"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.39",
+ "syn 2.0.40",
 ]

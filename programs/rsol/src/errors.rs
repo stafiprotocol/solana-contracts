@@ -11,6 +11,9 @@ pub enum Errors {
     #[msg("Admin not match")]
     AdminNotMatch,
 
+    #[msg("Fee recipient not match")]
+    FeeRecipientNotMatch,
+
     #[msg("Delegation empty")]
     DelegationEmpty,
 
@@ -97,4 +100,7 @@ pub enum Errors {
 
     #[msg("Validators not equal")]
     ValidatorsNotEqual,
+
+    #[msg("Rate change over limit")]
+    RateChangeOverLimit,
 }

@@ -7,7 +7,6 @@ pub struct EraUpdateActive<'info> {
     #[account(mut)]
     pub stake_manager: Account<'info, StakeManager>,
 
-    #[account(mut)]
     pub stake_account: Account<'info, StakeAccount>,
 }
 
