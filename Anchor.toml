@@ -6,11 +6,6 @@ solana_version = "1.16.20"
 seeds = false
 skip-lint = false
 
-[programs.devnet]
-bridge = "GF5hXVTvkErn2LTL5myFVbgqPXHnZYj2CkVGU6ZTEtyK"
-minter = "HDb577JnkPHLFpfbTg1ncX9jmVHGjzX6S9bgZvNnXjVj"
-rsol = "5N1PkgbPx5Qs3eGaJre16AHsNMRPYM9JSwxXDG83tWX9"
-
 [registry]
 url = "https://api.apr.dev"
 
