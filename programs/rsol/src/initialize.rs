@@ -74,6 +74,8 @@ impl<'info> Initialize<'info> {
             unstake_fee_commission: StakeManager::DEFAULT_UNSTAKE_FEE_COMMISSION,
             protocol_fee_commission: StakeManager::DEFAULT_PROTOCOL_FEE_COMMISSION,
             rate_change_limit: StakeManager::DEFAULT_RATE_CHANGE_LIMIT,
+            stake_accounts_len_limit: StakeManager::DEFAULT_STAKE_ACCOUNT_LEN_LIMIT,
+            split_accounts_len_limit: StakeManager::DEFAULT_SPLIT_ACCOUNT_LEN_LIMIT,
             unbonding_duration: StakeManager::DEFAULT_UNBONDING_DURATION,
             latest_era: initialize_data.latest_era,
             rate: initialize_data.rate,

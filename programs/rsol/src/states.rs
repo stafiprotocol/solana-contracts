@@ -15,6 +15,8 @@ pub struct StakeManager {
     pub unstake_fee_commission: u64,  // decimals 9
     pub protocol_fee_commission: u64, // decimals 9
     pub rate_change_limit: u64,       // decimals 9
+    pub stake_accounts_len_limit: u64,
+    pub split_accounts_len_limit: u64,
     pub unbonding_duration: u64,
 
     pub latest_era: u64,
@@ -79,6 +81,8 @@ impl StakeManager {
     pub const DEFAULT_UNSTAKE_FEE_COMMISSION: u64 = 100_000_000;
     pub const DEFAULT_PROTOCOL_FEE_COMMISSION: u64 = 100_000_000;
     pub const DEFAULT_RATE_CHANGE_LIMIT: u64 = 500_000;
+    pub const DEFAULT_STAKE_ACCOUNT_LEN_LIMIT: u64 = 5;
+    pub const DEFAULT_SPLIT_ACCOUNT_LEN_LIMIT: u64 = 5;
 
     pub fn calc_rsol_amount(&self, sol_amount: u64) -> Result<u64> {
         u64::try_from((sol_amount as u128) * (StakeManager::CAL_BASE as u128) / (self.rate as u128))

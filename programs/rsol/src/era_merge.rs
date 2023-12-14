@@ -48,8 +48,7 @@ impl<'info> EraMerge<'info> {
         );
 
         require!(
-            !self
-                .stake_manager
+            self.stake_manager
                 .stake_accounts
                 .contains(&self.dst_stake_account.key()),
             Errors::StakeAccountNotExist
