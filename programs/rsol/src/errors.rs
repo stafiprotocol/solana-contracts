@@ -37,6 +37,9 @@ pub enum Errors {
 
     #[msg("Validator not exist")]
     ValidatorNotExist,
+    
+    #[msg("Validator already exist")]
+    ValidatorAlreadyExist,
 
     #[msg("Validator not match")]
     ValidatorNotMatch,
@@ -106,4 +109,7 @@ pub enum Errors {
 
     #[msg("Rate change over limit")]
     RateChangeOverLimit,
+
+    #[msg("Mint account not match")]
+    MintAccountNotMatch,
 }

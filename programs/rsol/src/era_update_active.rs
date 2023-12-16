@@ -30,6 +30,13 @@ impl<'info> EraUpdateActive<'info> {
             .delegation()
             .ok_or_else(|| error!(Errors::DelegationEmpty))?;
 
+        // require stake is active (deactivation_epoch == u64::MAX)
+        require_eq!(
+            delegation.deactivation_epoch,
+            std::u64::MAX,
+            Errors::StakeAccountNotActive
+        );
+
         self.stake_manager
             .era_process_data
             .pending_stake_accounts

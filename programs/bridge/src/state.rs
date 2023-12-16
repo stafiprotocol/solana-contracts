@@ -8,7 +8,10 @@ use std::collections::BTreeMap;
 use std::convert::Into;
 #[derive(Accounts)]
 pub struct AdminAuth<'info> {
-    #[account(mut, has_one = admin @ Errors::AdminNotMatch)]
+    #[account(
+        mut, 
+        has_one = admin @ Errors::AdminNotMatch
+    )]
     pub bridge: Box<Account<'info, Bridge>>,
 
     pub admin: Signer<'info>,
@@ -16,14 +19,18 @@ pub struct AdminAuth<'info> {
 
 #[derive(Accounts)]
 pub struct SetMintAuthority<'info> {
-    #[account(has_one = admin @ Errors::AdminNotMatch)]
+    #[account(
+        has_one = admin @ Errors::AdminNotMatch
+    )]
     pub bridge: Box<Account<'info, Bridge>>,
 
     pub admin: Signer<'info>,
 
     /// CHECK: pda
     #[account(
-        seeds = [&bridge.key().to_bytes()],
+        seeds = [
+            &bridge.key().to_bytes()
+        ],
         bump = bridge.nonce,
     )]
     pub bridge_signer: UncheckedAccount<'info>,
@@ -38,6 +45,7 @@ pub struct SetMintAuthority<'info> {
 pub struct CreateBridge<'info> {
     #[account(zero)]
     pub bridge: Box<Account<'info, Bridge>>,
+
     pub rent: Sysvar<'info, Rent>,
 }
 
@@ -47,13 +55,19 @@ pub struct TransferOut<'info> {
     pub bridge: Box<Account<'info, Bridge>>,
 
     /// CHECK: token account's owner
-    #[account(signer, mut)]
+    #[account(
+        signer, 
+        mut
+    )]
     pub authority: UncheckedAccount<'info>,
 
     #[account(mut)]
     pub mint: Box<Account<'info, Mint>>,
 
-    #[account(mut)]
+    #[account(
+        mut,
+        token::mint = mint,
+    )]
     pub from: Box<Account<'info, TokenAccount>>,
 
     /// CHECK: fee receiver
@@ -61,7 +75,6 @@ pub struct TransferOut<'info> {
     pub fee_receiver: UncheckedAccount<'info>,
 
     pub token_program: Program<'info, Token>,
-
     pub system_program: Program<'info, System>,
 }
 
@@ -84,17 +97,24 @@ pub struct CreateMintProposal<'info> {
 
 #[derive(Accounts)]
 pub struct Approve<'info> {
-    #[account(constraint = bridge.owner_set_seqno == proposal.owner_set_seqno)]
+    #[account(
+        constraint = bridge.owner_set_seqno == proposal.owner_set_seqno
+    )]
     pub bridge: Box<Account<'info, Bridge>>,
 
     /// CHECK: pda
     #[account(
-        seeds = [&bridge.key().to_bytes()],
+        seeds = [
+            &bridge.key().to_bytes()
+        ],
         bump = bridge.nonce,
     )]
     pub bridge_signer: UncheckedAccount<'info>,
 
-    #[account(mut, has_one = bridge)]
+    #[account(
+        mut, 
+        has_one = bridge
+    )]
     pub proposal: Box<Account<'info, MintProposal>>,
 
     // One of the bridge owners. Checked in the handler.
@@ -103,7 +123,10 @@ pub struct Approve<'info> {
     )]
     pub approver: Signer<'info>,
 
-    #[account(mut)]
+    #[account(
+        mut,
+        address = mint_manager.rsol_mint
+    )]
     pub mint: Box<Account<'info, Mint>>,
 
     // token account which has been initiated

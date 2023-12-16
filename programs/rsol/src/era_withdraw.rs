@@ -13,20 +13,18 @@ pub struct EraWithdraw<'info> {
         seeds = [
             &stake_manager.key().to_bytes(),
             StakeManager::POOL_SEED
-            ],
-            bump = stake_manager.pool_seed_bump
-        )]
+        ],
+        bump = stake_manager.pool_seed_bump
+    )]
     pub stake_pool: SystemAccount<'info>,
 
     #[account(mut)]
     pub stake_account: Account<'info, StakeAccount>,
 
     pub clock: Sysvar<'info, Clock>,
-
     /// CHECK: stake history
     #[account(address = stake_history::ID)]
     pub stake_history: UncheckedAccount<'info>,
-
     pub stake_program: Program<'info, Stake>,
 }
 
@@ -66,7 +64,7 @@ impl<'info> EraWithdraw<'info> {
                     &[self.stake_manager.pool_seed_bump],
                 ]],
             ),
-            self.stake_account.to_account_info().lamports(),
+            self.stake_account.get_lamports(),
             None,
         )?;
 

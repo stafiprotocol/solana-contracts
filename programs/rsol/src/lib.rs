@@ -94,6 +94,30 @@ pub mod rsol {
         Ok(())
     }
 
+    pub fn add_validator(ctx: Context<AddValidator>, new_validator: Pubkey) -> Result<()> {
+        check_context(&ctx)?;
+
+        ctx.accounts.process(new_validator)?;
+
+        Ok(())
+    }
+
+    pub fn remove_validator(ctx: Context<RemoveValidator>, remove_validator: Pubkey) -> Result<()> {
+        check_context(&ctx)?;
+
+        ctx.accounts.process(remove_validator)?;
+
+        Ok(())
+    }
+
+    pub fn redelegate(ctx: Context<Redelegate>, redelegate_amount: u64) -> Result<()> {
+        check_context(&ctx)?;
+
+        ctx.accounts.process(redelegate_amount)?;
+
+        Ok(())
+    }
+
     // staker
 
     pub fn stake(ctx: Context<Stake>, stake_amount: u64) -> Result<()> {

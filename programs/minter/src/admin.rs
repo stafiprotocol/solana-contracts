@@ -4,7 +4,10 @@ use anchor_lang::prelude::*;
 
 #[derive(Accounts)]
 pub struct TransferAdmin<'info> {
-    #[account(mut,has_one = admin @ Errors::AdminNotMatch)]
+    #[account(
+        mut,
+        has_one = admin @ Errors::AdminNotMatch
+    )]
     pub mint_manager: Account<'info, MintManager>,
 
     pub admin: Signer<'info>,
@@ -19,7 +22,10 @@ impl<'info> TransferAdmin<'info> {
 
 #[derive(Accounts)]
 pub struct SetExtMintAuthorities<'info> {
-    #[account(mut, has_one = admin @ Errors::AdminNotMatch)]
+    #[account(
+        mut, 
+        has_one = admin @ Errors::AdminNotMatch
+    )]
     pub mint_manager: Box<Account<'info, MintManager>>,
 
     pub admin: Signer<'info>,

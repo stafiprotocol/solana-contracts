@@ -7,7 +7,10 @@ use minter::program::Minter;
 use minter::{self, MintManager};
 #[derive(Accounts)]
 pub struct EraUpdateRate<'info> {
-    #[account(mut, has_one = fee_recipient @ Errors::FeeRecipientNotMatch)]
+    #[account(
+        mut, 
+        has_one = fee_recipient @ Errors::FeeRecipientNotMatch
+    )]
     pub stake_manager: Account<'info, StakeManager>,
 
     #[account(

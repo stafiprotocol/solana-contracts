@@ -1421,9 +1421,9 @@ checksum = "4dccd0940a2dcdf68d092b8cbab7dc0ad8fa938bf95787e1b916b0e3d0e8e970"
 
 [[package]]
 name = "solana-frozen-abi"
-version = "1.17.10"
+version = "1.17.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "13254cef276fed902b40c355ea08dcb7a7b8b02fb5ee6585255c3bfcf6b075d4"
+checksum = "e9cbd5ffa411ac153a68a7c5529b80394e85fc3f8177923bddaecbd358896587"
 dependencies = [
  "ahash 0.8.6",
  "blake3",
@@ -1451,9 +1451,9 @@ dependencies = [
 
 [[package]]
 name = "solana-frozen-abi-macro"
-version = "1.17.10"
+version = "1.17.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "014b1a6df0cfd712fbe71a244bf9b46eb513b85569b7abb156cf8c0bf62d33d9"
+checksum = "22ac7a28f032318edf69a8b2ca9717d6a0e50275d5880b7febd357c7289d6c55"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1463,9 +1463,9 @@ dependencies = [
 
 [[package]]
 name = "solana-program"
-version = "1.17.10"
+version = "1.17.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7c40a96d667a1b535d1ab952a0c5419b2243bb9bdf07e1517e03bc0e906f9517"
+checksum = "43a12e47fdf1048d2f86d7798547377cad8689edbaf6571b19b9f2e5beb3fab7"
 dependencies = [
  "ark-bn254",
  "ark-ec",
@@ -1517,9 +1517,9 @@ dependencies = [
 
 [[package]]
 name = "solana-sdk-macro"
-version = "1.17.10"
+version = "1.17.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ac96537196d5d8d30ca242b44ddb3faed1a81b5e43375774ac8c9ea633bec647"
+checksum = "44b506d09af58e14f389823d4be966cc98f8c0aad5042f996122b5f3e09bef5a"
 dependencies = [
  "bs58 0.4.0",
  "proc-macro2",
@@ -1573,18 +1573,18 @@ dependencies = [
 
 [[package]]
 name = "thiserror"
-version = "1.0.50"
+version = "1.0.51"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f9a7210f5c9a7156bb50aa36aed4c95afb51df0df00713949448cf9e97d382d2"
+checksum = "f11c217e1416d6f036b870f14e0413d480dbf28edbee1f877abaf0206af43bb7"
 dependencies = [
  "thiserror-impl",
 ]
 
 [[package]]
 name = "thiserror-impl"
-version = "1.0.50"
+version = "1.0.51"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "266b2e40bc00e5a6c09c3584011e08b06f123c00362c92b975ba9843aaaa14b8"
+checksum = "01742297787513b79cf8e29d1056ede1313e2420b7b3b15d0a768b4921f549df"
 dependencies = [
  "proc-macro2",
  "quote",

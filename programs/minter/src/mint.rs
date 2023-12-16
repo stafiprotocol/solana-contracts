@@ -6,6 +6,9 @@ pub use crate::states::*;
 
 #[derive(Accounts)]
 pub struct MintToken<'info> {
+    #[account(
+        has_one = rsol_mint
+    )]
     pub mint_manager: Box<Account<'info, MintManager>>,
 
     #[account(mut)]
@@ -59,7 +62,11 @@ impl<'info> MintToken<'info> {
             mint_amount,
         )?;
 
-        msg!("rsol mint amount: {}", mint_amount);
+        msg!(
+            "rsol mint amount: {}, ext_mint_authority: {}",
+            mint_amount,
+            self.ext_mint_authority.key().to_string()
+        );
 
         Ok(())
     }

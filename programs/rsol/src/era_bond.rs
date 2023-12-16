@@ -49,15 +49,12 @@ pub struct EraBond<'info> {
 
     pub clock: Sysvar<'info, Clock>,
     pub rent: Sysvar<'info, Rent>,
-
     /// CHECK: stake config account
     #[account(address = stake::config::ID)]
     pub stake_config: UncheckedAccount<'info>,
-
     /// CHECK: stake history account
     #[account(address = stake_history::ID)]
     pub stake_history: UncheckedAccount<'info>,
-
     pub stake_program: Program<'info, Stake>,
     pub system_program: Program<'info, System>,
 }

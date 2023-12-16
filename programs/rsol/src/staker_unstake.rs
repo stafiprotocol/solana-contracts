@@ -6,7 +6,11 @@ use anchor_spl::token::{
 
 #[derive(Accounts)]
 pub struct Unstake<'info> {
-    #[account(mut, has_one = fee_recipient @ Errors::FeeRecipientNotMatch)]
+    #[account(
+        mut, 
+        has_one = fee_recipient @ Errors::FeeRecipientNotMatch,
+        has_one = rsol_mint @ Errors::MintAccountNotMatch
+    )]
     pub stake_manager: Box<Account<'info, StakeManager>>,
 
     #[account(mut)]
@@ -26,7 +30,7 @@ pub struct Unstake<'info> {
     )]
     pub unstake_account: Box<Account<'info, UnstakeAccount>>,
 
-    #[account(mut, token::mint = rsol_mint)]
+    #[account(mut)]
     pub fee_recipient: Box<Account<'info, TokenAccount>>,
 
     pub clock: Sysvar<'info, Clock>,

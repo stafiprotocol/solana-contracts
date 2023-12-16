@@ -10,7 +10,10 @@ use minter::{self, MintManager};
 
 #[derive(Accounts)]
 pub struct Stake<'info> {
-    #[account(mut)]
+    #[account(
+        mut,
+        has_one = rsol_mint @Errors::MintAccountNotMatch,
+    )]
     pub stake_manager: Account<'info, StakeManager>,
 
     #[account(
@@ -29,6 +32,9 @@ pub struct Stake<'info> {
     )]
     pub from: Signer<'info>,
 
+    #[account(
+        has_one = rsol_mint @Errors::MintAccountNotMatch,
+    )]
     pub mint_manager: Box<Account<'info, MintManager>>,
 
     #[account(mut)]
@@ -36,7 +42,7 @@ pub struct Stake<'info> {
 
     #[account(
         mut,
-        token::mint = mint_manager.rsol_mint
+        token::mint = stake_manager.rsol_mint,
     )]
     pub mint_to: Box<Account<'info, TokenAccount>>,
 

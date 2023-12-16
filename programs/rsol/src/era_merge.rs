@@ -25,11 +25,9 @@ pub struct EraMerge<'info> {
     pub stake_pool: SystemAccount<'info>,
 
     pub clock: Sysvar<'info, Clock>,
-
     /// CHECK: stake history
     #[account(address = stake_history::ID)]
     pub stake_history: UncheckedAccount<'info>,
-
     pub stake_program: Program<'info, Stake>,
 }
 

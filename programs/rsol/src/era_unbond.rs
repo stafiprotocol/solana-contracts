@@ -1,5 +1,6 @@
 use crate::{Errors, StakeManager};
 use anchor_lang::prelude::*;
+use anchor_lang::solana_program::sysvar::stake_history;
 use anchor_lang::{
     solana_program::{
         program::invoke_signed,
@@ -8,8 +9,8 @@ use anchor_lang::{
     system_program,
 };
 use anchor_spl::stake::{
-    deactivate_stake as solana_deactivate_stake, DeactivateStake as SolanaDeactivateStake, Stake,
-    StakeAccount,
+    deactivate_stake as solana_deactivate_stake, withdraw,
+    DeactivateStake as SolanaDeactivateStake, Stake, StakeAccount, Withdraw,
 };
 
 #[derive(Accounts)]
@@ -21,8 +22,8 @@ pub struct EraUnbond<'info> {
         seeds = [
             &stake_manager.key().to_bytes(),
             StakeManager::POOL_SEED
-            ],
-            bump = stake_manager.pool_seed_bump
+        ],
+        bump = stake_manager.pool_seed_bump
     )]
     pub stake_pool: SystemAccount<'info>,
 
@@ -49,7 +50,9 @@ pub struct EraUnbond<'info> {
 
     pub clock: Sysvar<'info, Clock>,
     pub rent: Sysvar<'info, Rent>,
-
+    /// CHECK: stake history account
+    #[account(address = stake_history::ID)]
+    pub stake_history: UncheckedAccount<'info>,
     pub stake_program: Program<'info, Stake>,
     pub system_program: Program<'info, System>,
 }
@@ -95,6 +98,23 @@ impl<'info> EraUnbond<'info> {
         let total_need_unbond = self.stake_manager.era_process_data.need_unbond;
 
         if delegation.stake <= total_need_unbond {
+            // withdraw rent reserve back to payer
+            withdraw(
+                CpiContext::new(
+                    self.stake_program.to_account_info(),
+                    Withdraw {
+                        stake: self.split_stake_account.to_account_info(),
+                        withdrawer: self.split_stake_account.to_account_info(),
+                        to: self.rent_payer.to_account_info(),
+                        clock: self.clock.to_account_info(),
+                        stake_history: self.stake_history.to_account_info(),
+                    },
+                ),
+                self.split_stake_account.get_lamports(),
+                None,
+            )?;
+
+            // deactive
             solana_deactivate_stake(CpiContext::new_with_signer(
                 self.stake_program.to_account_info(),
                 SolanaDeactivateStake {
@@ -120,6 +140,7 @@ impl<'info> EraUnbond<'info> {
 
             self.stake_manager.era_process_data.need_unbond -= delegation.stake;
         } else {
+            // split
             let split_instruction = stake::instruction::split(
                 self.stake_account.to_account_info().key,
                 self.stake_pool.key,
@@ -145,6 +166,7 @@ impl<'info> EraUnbond<'info> {
                 ]],
             )?;
 
+            // deactive
             solana_deactivate_stake(CpiContext::new_with_signer(
                 self.stake_program.to_account_info(),
                 SolanaDeactivateStake {

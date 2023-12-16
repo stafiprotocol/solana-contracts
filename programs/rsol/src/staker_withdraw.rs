@@ -30,7 +30,6 @@ pub struct Withdraw<'info> {
     pub recipient: SystemAccount<'info>,
 
     pub clock: Sysvar<'info, Clock>,
-
     pub system_program: Program<'info, System>,
 }
 
