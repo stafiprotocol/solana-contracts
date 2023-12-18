@@ -12,7 +12,7 @@ pub use crate::initialize::*;
 pub use crate::mint::*;
 pub use crate::states::*;
 
-declare_id!("HDb577JnkPHLFpfbTg1ncX9jmVHGjzX6S9bgZvNnXjVj");
+declare_id!("9akpBZZyVdyp4BGcsftn5dBNKEWSnKa9tZorKk4extwB");
 
 fn check_context<T: Bumps>(ctx: &Context<T>) -> Result<()> {
     if !check_id(ctx.program_id) {
