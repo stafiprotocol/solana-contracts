@@ -48,6 +48,7 @@ impl<'info> EraWithdraw<'info> {
             Errors::StakeAccountActive
         );
 
+        let withdraw_amount = self.stake_account.get_lamports();
         withdraw(
             CpiContext::new_with_signer(
                 self.stake_program.to_account_info(),
@@ -64,7 +65,7 @@ impl<'info> EraWithdraw<'info> {
                     &[self.stake_manager.pool_seed_bump],
                 ]],
             ),
-            self.stake_account.get_lamports(),
+            withdraw_amount,
             None,
         )?;
 
@@ -72,6 +73,11 @@ impl<'info> EraWithdraw<'info> {
             .split_accounts
             .retain(|&e| e != self.stake_account.key());
 
+        msg!(
+            "EraWithdraw: stake account: {} amount: {}",
+            self.stake_account.key().to_string(),
+            withdraw_amount
+        );
         Ok(())
     }
 }

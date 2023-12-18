@@ -79,6 +79,7 @@ impl<'info> EraBond<'info> {
             Errors::StakeAccountAlreadyExist
         );
 
+        let need_bond = self.stake_manager.era_process_data.need_bond;
         transfer(
             CpiContext::new_with_signer(
                 self.system_program.to_account_info(),
@@ -92,7 +93,7 @@ impl<'info> EraBond<'info> {
                     &[self.stake_manager.pool_seed_bump],
                 ]],
             ),
-            self.stake_manager.era_process_data.need_bond,
+            need_bond,
         )?;
 
         invoke(
@@ -143,6 +144,11 @@ impl<'info> EraBond<'info> {
             .pending_stake_accounts
             .push(self.stake_account.key());
 
+        msg!(
+            "EraBond: stake account: {} bond: {}",
+            self.stake_account.key().to_string(),
+            need_bond
+        );
         Ok(())
     }
 }

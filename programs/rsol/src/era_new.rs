@@ -44,6 +44,7 @@ impl<'info> EraNew<'info> {
             pending_stake_accounts: self.stake_manager.stake_accounts.clone(),
         };
 
+        msg!("EraNew: latest era: {}", new_era);
         Ok(())
     }
 }

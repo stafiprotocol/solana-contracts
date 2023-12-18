@@ -44,6 +44,11 @@ impl<'info> EraUpdateActive<'info> {
 
         self.stake_manager.era_process_data.new_active += delegation.stake;
 
+        msg!(
+            "EraUpdateActive: stake account: {} active: {}",
+            self.stake_account.key().to_string(),
+            delegation.stake
+        );
         Ok(())
     }
 }

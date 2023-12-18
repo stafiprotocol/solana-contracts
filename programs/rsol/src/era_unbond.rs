@@ -143,6 +143,12 @@ impl<'info> EraUnbond<'info> {
                 .push(self.stake_account.key());
 
             self.stake_manager.era_process_data.need_unbond -= delegation.stake;
+
+            msg!(
+                "EraUnbond: stake account: {} unbond: {}",
+                self.stake_account.key().to_string(),
+                delegation.stake
+            );
         } else {
             // split
             let split_instruction = stake::instruction::split(
@@ -190,6 +196,13 @@ impl<'info> EraUnbond<'info> {
                 .push(self.split_stake_account.key());
 
             self.stake_manager.era_process_data.need_unbond -= total_need_unbond;
+
+            msg!(
+                "EraUnbond: stake account: {} split account: {} unbond: {}",
+                self.stake_account.key().to_string(),
+                self.split_stake_account.key().to_string(),
+                total_need_unbond
+            );
         }
 
         Ok(())

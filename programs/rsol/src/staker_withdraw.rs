@@ -54,10 +54,10 @@ impl<'info> Withdraw<'info> {
         );
 
         let pool_balance = self.stake_pool.lamports();
-        let lamports = self.unstake_account.amount;
+        let withdraw_amount = self.unstake_account.amount;
 
-        let available_for_claim = pool_balance - self.stake_manager.rent_exempt_for_pool_acc;
-        if lamports > available_for_claim {
+        let available_for_withdraw = pool_balance - self.stake_manager.rent_exempt_for_pool_acc;
+        if withdraw_amount > available_for_withdraw {
             return err!(Errors::PoolBalanceNotEnough);
         }
 
@@ -74,8 +74,15 @@ impl<'info> Withdraw<'info> {
                     &[self.stake_manager.pool_seed_bump],
                 ]],
             ),
-            lamports,
+            withdraw_amount,
         )?;
+
+        msg!(
+            "Withdraw: staker: {} unstake account: {} amount: {}",
+            self.recipient.key().to_string(),
+            self.unstake_account.key().to_string(),
+            withdraw_amount,
+        );
 
         Ok(())
     }

@@ -52,7 +52,7 @@ impl<'info> Unstake<'info> {
                 unstake_amount,
                 Errors::BalanceNotEnough
             );
-        } else if *self.burn_rsol_authority.key == self.burn_rsol_from.owner {
+        } else if self.burn_rsol_authority.key() == self.burn_rsol_from.owner {
             require_gte!(
                 self.burn_rsol_from.amount,
                 unstake_amount,
@@ -107,6 +107,11 @@ impl<'info> Unstake<'info> {
             created_epoch: self.clock.epoch,
         });
 
+        msg!(
+            "Unstake: staker: {} rsol: {} sol: {} fee: {}",
+            self.burn_rsol_from.owner.to_string(),
+            unstake_amount, sol_amount, unstake_fee
+        );
         Ok(())
     }
 }

@@ -24,6 +24,8 @@ pub struct TransferAdmin<'info> {
 impl<'info> TransferAdmin<'info> {
     pub fn process(&mut self, new_admin: Pubkey) -> Result<()> {
         self.stake_manager.admin = new_admin;
+
+        msg!("TransferAdmin: new admin: {}", new_admin);
         Ok(())
     }
 }
@@ -42,6 +44,8 @@ pub struct SetMinStakeAmount<'info> {
 impl<'info> SetMinStakeAmount<'info> {
     pub fn process(&mut self, amount: u64) -> Result<()> {
         self.stake_manager.min_stake_amount = amount;
+
+        msg!("SetMinStakeAmount: amount: {}", amount);
         Ok(())
     }
 }
@@ -60,6 +64,8 @@ pub struct SetUnbondingDuration<'info> {
 impl<'info> SetUnbondingDuration<'info> {
     pub fn process(&mut self, duration: u64) -> Result<()> {
         self.stake_manager.unbonding_duration = duration;
+
+        msg!("SetUnbondingDuration: duration: {}", duration);
         Ok(())
     }
 }
@@ -80,6 +86,8 @@ impl<'info> AddValidator<'info> {
         require!(!self.stake_manager.validators.contains(&new_validator), Errors::ValidatorAlreadyExist);
 
         self.stake_manager.validators.push(new_validator);
+
+        msg!("AddValidator: new validator: {}", new_validator.key().to_string());
         Ok(())
     }
 }
@@ -100,6 +108,8 @@ impl<'info> RemoveValidator<'info> {
         require!(self.stake_manager.validators.contains(&remove_validator), Errors::ValidatorNotExist);
 
         self.stake_manager.validators.retain(|&e| e != remove_validator);
+
+        msg!("RemoveValidator: remove validator: {}", remove_validator.key().to_string());
         Ok(())
     }
 }
@@ -330,6 +340,12 @@ impl<'info> Redelegate<'info> {
             .stake_accounts
             .push(self.to_stake_account.key());
 
+        msg!(
+            "Redelegate: from stake account: {} to stake account: {} amount: {}", 
+            self.from_stake_account.key().to_string(), 
+            self.to_stake_account.key().to_string(), 
+            redelegate_amount
+        );
         Ok(())
     }
 }

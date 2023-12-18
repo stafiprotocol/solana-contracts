@@ -105,6 +105,11 @@ impl<'info> EraMerge<'info> {
             .stake_accounts
             .retain(|&e| e != self.src_stake_account.key());
 
+        msg!(
+            "EraMerge: src stake account: {} dst stake account: {}",
+            self.src_stake_account.key().to_string(),
+            self.dst_stake_account.key().to_string()
+        );
         Ok(())
     }
 }

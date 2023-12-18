@@ -103,6 +103,12 @@ impl<'info> Stake<'info> {
 
         self.stake_manager.total_rsol_supply += rsol_amount;
 
+        msg!(
+            "Stake: staker: {} sol: {} rsol: {}",
+            self.from.key().to_string(),
+            stake_amount,
+            rsol_amount
+        );
         Ok(())
     }
 }
