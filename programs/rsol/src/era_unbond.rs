@@ -138,6 +138,10 @@ impl<'info> EraUnbond<'info> {
                 .pending_stake_accounts
                 .retain(|&e| e != self.stake_account.key());
 
+            self.stake_manager
+                .split_accounts
+                .push(self.stake_account.key());
+
             self.stake_manager.era_process_data.need_unbond -= delegation.stake;
         } else {
             // split

@@ -116,10 +116,9 @@ pub struct Redelegate<'info> {
 
     /// CHECK: validator account
     #[account(mut)]
-    pub new_validator: UncheckedAccount<'info>,
+    pub to_validator: UncheckedAccount<'info>,
 
     #[account(
-        mut,
         seeds = [
             &stake_manager.key().to_bytes(),
             StakeManager::POOL_SEED
@@ -167,6 +166,8 @@ pub struct Redelegate<'info> {
 
 impl<'info> Redelegate<'info> {
     pub fn process(&mut self, redelegate_amount: u64) -> Result<()> {
+        require!(self.stake_manager.era_process_data.is_empty(), Errors::EraIsProcessing);
+
         require!(
             self.stake_manager
                 .stake_accounts
@@ -193,7 +194,7 @@ impl<'info> Redelegate<'info> {
         require!(
             self.stake_manager
                 .validators
-                .contains(self.new_validator.key),
+                .contains(self.to_validator.key),
             Errors::ValidatorNotExist
         );
 
@@ -208,6 +209,8 @@ impl<'info> Redelegate<'info> {
             std::u64::MAX,
             Errors::StakeAccountNotActive
         );
+
+        require_keys_neq!(self.to_validator.key(), delegation.voter_pubkey, Errors::ValidatorNotMatch);
 
         require_gte!(delegation.stake, redelegate_amount, Errors::AmountUnmatch);
 
@@ -242,19 +245,20 @@ impl<'info> Redelegate<'info> {
             let redelegate_instruction = &stake::instruction::redelegate(
                 &self.split_stake_account.key(),
                 &self.stake_pool.key(),
-                &self.new_validator.key(),
+                &self.to_validator.key(),
                 &self.to_stake_account.key(),
             )
             .last()
             .unwrap()
             .clone();
-
+            
             invoke_signed(
                 redelegate_instruction,
                 &[
+                    self.stake_program.to_account_info(),
                     self.split_stake_account.to_account_info(),
-                    self.new_validator.to_account_info(),
                     self.to_stake_account.to_account_info(),
+                    self.to_validator.to_account_info(),
                     self.stake_config.to_account_info(),
                     self.stake_pool.to_account_info(),
                 ],
@@ -289,7 +293,7 @@ impl<'info> Redelegate<'info> {
             let redelegate_instruction = &stake::instruction::redelegate(
                 &self.from_stake_account.key(),
                 &self.stake_pool.key(),
-                &self.new_validator.key(),
+                &self.to_validator.key(),
                 &self.to_stake_account.key(),
             )
             .last()
@@ -299,9 +303,10 @@ impl<'info> Redelegate<'info> {
             invoke_signed(
                 redelegate_instruction,
                 &[
+                    self.stake_program.to_account_info(),
                     self.from_stake_account.to_account_info(),
-                    self.new_validator.to_account_info(),
                     self.to_stake_account.to_account_info(),
+                    self.to_validator.to_account_info(),
                     self.stake_config.to_account_info(),
                     self.stake_pool.to_account_info(),
                 ],
