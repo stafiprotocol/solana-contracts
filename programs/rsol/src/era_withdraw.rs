@@ -28,6 +28,13 @@ pub struct EraWithdraw<'info> {
     pub stake_program: Program<'info, Stake>,
 }
 
+#[event]
+pub struct EventEraWithdraw {
+    pub era: u64,
+    pub stake_account: Pubkey,
+    pub withdraw_amount: u64,
+}
+
 impl<'info> EraWithdraw<'info> {
     pub fn process(&mut self) -> Result<()> {
         require!(
@@ -73,11 +80,11 @@ impl<'info> EraWithdraw<'info> {
             .split_accounts
             .retain(|&e| e != self.stake_account.key());
 
-        msg!(
-            "EraWithdraw: stake account: {} amount: {}",
-            self.stake_account.key().to_string(),
+        emit!(EventEraWithdraw {
+            era: self.stake_manager.latest_era,
+            stake_account: self.stake_account.key(),
             withdraw_amount
-        );
+        });
         Ok(())
     }
 }

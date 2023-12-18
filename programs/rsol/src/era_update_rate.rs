@@ -41,9 +41,10 @@ pub struct EraUpdateRate<'info> {
 }
 
 #[event]
-pub struct EventUpdateRate {
+pub struct EventEraUpdateRate {
     pub era: u64,
     pub rate: u64,
+    pub fee: u64,
 }
 
 impl<'info> EraUpdateRate<'info> {
@@ -109,8 +110,11 @@ impl<'info> EraUpdateRate<'info> {
         self.stake_manager.active = new_active;
         self.stake_manager.rate = new_rate;
 
-        emit!(EventUpdateRate{ era: self.stake_manager.latest_era, rate: new_rate });
-        msg!("EraUpdateRate: era: {} rate: {}", self.stake_manager.latest_era, new_rate);
+        emit!(EventEraUpdateRate{ 
+            era: self.stake_manager.latest_era, 
+            rate: new_rate,
+            fee: protocol_fee
+        });
         Ok(())
     }
 }

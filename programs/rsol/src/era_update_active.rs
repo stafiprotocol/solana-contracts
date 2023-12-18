@@ -10,6 +10,13 @@ pub struct EraUpdateActive<'info> {
     pub stake_account: Account<'info, StakeAccount>,
 }
 
+#[event]
+pub struct EventEraUpdateActive {
+    pub era: u64,
+    pub stake_account: Pubkey,
+    pub stake_amount: u64,
+}
+
 impl<'info> EraUpdateActive<'info> {
     pub fn process(&mut self) -> Result<()> {
         require!(
@@ -44,11 +51,11 @@ impl<'info> EraUpdateActive<'info> {
 
         self.stake_manager.era_process_data.new_active += delegation.stake;
 
-        msg!(
-            "EraUpdateActive: stake account: {} active: {}",
-            self.stake_account.key().to_string(),
-            delegation.stake
-        );
+        emit!(EventEraUpdateActive {
+            era: self.stake_manager.latest_era,
+            stake_account: self.stake_account.key(),
+            stake_amount: delegation.stake
+        });
         Ok(())
     }
 }

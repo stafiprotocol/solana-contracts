@@ -9,6 +9,14 @@ pub struct EraNew<'info> {
     pub clock: Sysvar<'info, Clock>,
 }
 
+#[event]
+pub struct EventEraNew {
+    pub new_era: u64,
+    pub need_bond: u64,
+    pub need_unbond: u64,
+    pub active: u64,
+}
+
 impl<'info> EraNew<'info> {
     pub fn process(&mut self) -> Result<()> {
         let new_era = self.stake_manager.latest_era + 1;
@@ -44,7 +52,12 @@ impl<'info> EraNew<'info> {
             pending_stake_accounts: self.stake_manager.stake_accounts.clone(),
         };
 
-        msg!("EraNew: latest era: {}", new_era);
+        emit!(EventEraNew {
+            new_era,
+            need_bond,
+            need_unbond,
+            active: self.stake_manager.active
+        });
         Ok(())
     }
 }

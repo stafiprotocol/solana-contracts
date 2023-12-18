@@ -31,6 +31,12 @@ pub struct EraMerge<'info> {
     pub stake_program: Program<'info, Stake>,
 }
 
+#[event]
+pub struct EventEraMerge {
+    pub src_stake_account: Pubkey,
+    pub dst_stake_account: Pubkey,
+}
+
 impl<'info> EraMerge<'info> {
     pub fn process(&mut self) -> Result<()> {
         require!(
@@ -105,11 +111,10 @@ impl<'info> EraMerge<'info> {
             .stake_accounts
             .retain(|&e| e != self.src_stake_account.key());
 
-        msg!(
-            "EraMerge: src stake account: {} dst stake account: {}",
-            self.src_stake_account.key().to_string(),
-            self.dst_stake_account.key().to_string()
-        );
+        emit!(EventEraMerge {
+            src_stake_account: self.src_stake_account.key(),
+            dst_stake_account: self.dst_stake_account.key()
+        });
         Ok(())
     }
 }

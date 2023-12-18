@@ -174,6 +174,14 @@ pub struct Redelegate<'info> {
     pub system_program: Program<'info, System>,
 }
 
+#[event]
+pub struct EventRedelegate {
+    pub from_stake_account: Pubkey,
+    pub to_stake_account: Pubkey,
+    pub redelegate_amount: u64,
+}
+
+
 impl<'info> Redelegate<'info> {
     pub fn process(&mut self, redelegate_amount: u64) -> Result<()> {
         require!(self.stake_manager.era_process_data.is_empty(), Errors::EraIsProcessing);
@@ -340,12 +348,12 @@ impl<'info> Redelegate<'info> {
             .stake_accounts
             .push(self.to_stake_account.key());
 
-        msg!(
-            "Redelegate: from stake account: {} to stake account: {} amount: {}", 
-            self.from_stake_account.key().to_string(), 
-            self.to_stake_account.key().to_string(), 
-            redelegate_amount
-        );
+        emit!(EventRedelegate{ 
+            from_stake_account: self.from_stake_account.key(), 
+            to_stake_account: self.to_stake_account.key(),
+            redelegate_amount 
+        });
+        
         Ok(())
     }
 }

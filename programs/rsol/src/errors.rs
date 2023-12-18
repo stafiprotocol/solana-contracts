@@ -37,7 +37,7 @@ pub enum Errors {
 
     #[msg("Validator not exist")]
     ValidatorNotExist,
-    
+
     #[msg("Validator already exist")]
     ValidatorAlreadyExist,
 
@@ -112,4 +112,7 @@ pub enum Errors {
 
     #[msg("Mint account not match")]
     MintAccountNotMatch,
+
+    #[msg("Mint to owner not match")]
+    MintToOwnerNotMatch,
 }

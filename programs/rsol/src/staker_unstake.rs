@@ -18,7 +18,7 @@ pub struct Unstake<'info> {
 
     #[account(
         mut,
-        token::mint = stake_manager.rsol_mint
+        token::mint = stake_manager.rsol_mint,
     )]
     pub burn_rsol_from: Box<Account<'info, TokenAccount>>,
 
@@ -36,6 +36,16 @@ pub struct Unstake<'info> {
     pub clock: Sysvar<'info, Clock>,
     pub rent: Sysvar<'info, Rent>,
     pub token_program: Program<'info, Token>,
+}
+
+#[event]
+pub struct EventUnstake {
+    pub era: u64,
+    pub staker: Pubkey,
+    pub burn_rsol_from: Pubkey,
+    pub unstake_amount: u64,
+    pub sol_amount: u64,
+    pub unstake_fee: u64,
 }
 
 impl<'info> Unstake<'info> {
@@ -107,11 +117,15 @@ impl<'info> Unstake<'info> {
             created_epoch: self.clock.epoch,
         });
 
-        msg!(
-            "Unstake: staker: {} rsol: {} sol: {} fee: {}",
-            self.burn_rsol_from.owner.to_string(),
-            unstake_amount, sol_amount, unstake_fee
-        );
+        emit!(EventUnstake{ 
+            era: self.stake_manager.latest_era, 
+            staker: self.burn_rsol_from.owner, 
+            burn_rsol_from: self.burn_rsol_from.key(), 
+            unstake_amount, 
+            sol_amount, 
+            unstake_fee 
+        });
+        
         Ok(())
     }
 }

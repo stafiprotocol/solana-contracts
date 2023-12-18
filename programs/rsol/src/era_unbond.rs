@@ -28,7 +28,7 @@ pub struct EraUnbond<'info> {
     pub stake_pool: SystemAccount<'info>,
 
     #[account(mut)]
-    pub stake_account: Account<'info, StakeAccount>,
+    pub from_stake_account: Account<'info, StakeAccount>,
 
     #[account(
         init,
@@ -57,6 +57,14 @@ pub struct EraUnbond<'info> {
     pub system_program: Program<'info, System>,
 }
 
+#[event]
+pub struct EventEraUnbond {
+    pub era: u64,
+    pub from_stake_account: Pubkey,
+    pub split_account: Pubkey,
+    pub unbond_amount: u64,
+}
+
 impl<'info> EraUnbond<'info> {
     pub fn process(&mut self) -> Result<()> {
         require!(
@@ -72,7 +80,7 @@ impl<'info> EraUnbond<'info> {
         require!(
             self.stake_manager
                 .stake_accounts
-                .contains(&self.stake_account.key()),
+                .contains(&self.from_stake_account.key()),
             Errors::StakeAccountNotExist
         );
 
@@ -85,7 +93,7 @@ impl<'info> EraUnbond<'info> {
         );
 
         let delegation = self
-            .stake_account
+            .from_stake_account
             .delegation()
             .ok_or_else(|| error!(Errors::DelegationEmpty))?;
 
@@ -118,7 +126,7 @@ impl<'info> EraUnbond<'info> {
             solana_deactivate_stake(CpiContext::new_with_signer(
                 self.stake_program.to_account_info(),
                 SolanaDeactivateStake {
-                    stake: self.stake_account.to_account_info(),
+                    stake: self.from_stake_account.to_account_info(),
                     staker: self.stake_pool.to_account_info(),
                     clock: self.clock.to_account_info(),
                 },
@@ -131,28 +139,29 @@ impl<'info> EraUnbond<'info> {
 
             self.stake_manager
                 .stake_accounts
-                .retain(|&e| e != self.stake_account.key());
+                .retain(|&e| e != self.from_stake_account.key());
 
             self.stake_manager
                 .era_process_data
                 .pending_stake_accounts
-                .retain(|&e| e != self.stake_account.key());
+                .retain(|&e| e != self.from_stake_account.key());
 
             self.stake_manager
                 .split_accounts
-                .push(self.stake_account.key());
+                .push(self.from_stake_account.key());
 
             self.stake_manager.era_process_data.need_unbond -= delegation.stake;
 
-            msg!(
-                "EraUnbond: stake account: {} unbond: {}",
-                self.stake_account.key().to_string(),
-                delegation.stake
-            );
+            emit!(EventEraUnbond {
+                era: self.stake_manager.latest_era,
+                from_stake_account: self.from_stake_account.key(),
+                split_account: self.from_stake_account.key(),
+                unbond_amount: delegation.stake
+            });
         } else {
             // split
             let split_instruction = stake::instruction::split(
-                self.stake_account.to_account_info().key,
+                self.from_stake_account.to_account_info().key,
                 self.stake_pool.key,
                 total_need_unbond,
                 &self.split_stake_account.key(),
@@ -165,7 +174,7 @@ impl<'info> EraUnbond<'info> {
                 &split_instruction,
                 &[
                     self.stake_program.to_account_info(),
-                    self.stake_account.to_account_info(),
+                    self.from_stake_account.to_account_info(),
                     self.split_stake_account.to_account_info(),
                     self.stake_pool.to_account_info(),
                 ],
@@ -197,12 +206,12 @@ impl<'info> EraUnbond<'info> {
 
             self.stake_manager.era_process_data.need_unbond -= total_need_unbond;
 
-            msg!(
-                "EraUnbond: stake account: {} split account: {} unbond: {}",
-                self.stake_account.key().to_string(),
-                self.split_stake_account.key().to_string(),
-                total_need_unbond
-            );
+            emit!(EventEraUnbond {
+                era: self.stake_manager.latest_era,
+                from_stake_account: self.from_stake_account.key(),
+                split_account: self.split_stake_account.key(),
+                unbond_amount: total_need_unbond
+            });
         }
 
         Ok(())

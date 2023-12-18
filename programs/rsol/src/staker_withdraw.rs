@@ -33,6 +33,14 @@ pub struct Withdraw<'info> {
     pub system_program: Program<'info, System>,
 }
 
+#[event]
+pub struct EventWithdraw {
+    pub era: u64,
+    pub staker: Pubkey,
+    pub unstake_account: Pubkey,
+    pub withdraw_amount: u64,
+}
+
 impl<'info> Withdraw<'info> {
     pub fn process(&mut self) -> Result<()> {
         require_keys_eq!(
@@ -77,13 +85,12 @@ impl<'info> Withdraw<'info> {
             withdraw_amount,
         )?;
 
-        msg!(
-            "Withdraw: staker: {} unstake account: {} amount: {}",
-            self.recipient.key().to_string(),
-            self.unstake_account.key().to_string(),
-            withdraw_amount,
-        );
-
+        emit!(EventWithdraw {
+            era: self.stake_manager.latest_era,
+            staker: self.recipient.key(),
+            unstake_account: self.unstake_account.key(),
+            withdraw_amount
+        });
         Ok(())
     }
 }

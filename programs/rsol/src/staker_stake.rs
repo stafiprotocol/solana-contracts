@@ -28,12 +28,13 @@ pub struct Stake<'info> {
 
     #[account(
         mut,
-        owner = system_program::ID
+        owner = system_program::ID,
+        address = mint_to.owner @ Errors::MintToOwnerNotMatch
     )]
     pub from: Signer<'info>,
 
     #[account(
-        has_one = rsol_mint @Errors::MintAccountNotMatch,
+        has_one = rsol_mint @Errors::MintAccountNotMatch
     )]
     pub mint_manager: Box<Account<'info, MintManager>>,
 
@@ -42,7 +43,7 @@ pub struct Stake<'info> {
 
     #[account(
         mut,
-        token::mint = stake_manager.rsol_mint,
+        token::mint = stake_manager.rsol_mint
     )]
     pub mint_to: Box<Account<'info, TokenAccount>>,
 
@@ -52,6 +53,15 @@ pub struct Stake<'info> {
     pub minter_program: Program<'info, Minter>,
     pub system_program: Program<'info, System>,
     pub token_program: Program<'info, Token>,
+}
+
+#[event]
+pub struct EventStake {
+    pub era: u64,
+    pub staker: Pubkey,
+    pub mint_to: Pubkey,
+    pub stake_amount: u64,
+    pub rsol_amount: u64,
 }
 
 impl<'info> Stake<'info> {
@@ -103,12 +113,13 @@ impl<'info> Stake<'info> {
 
         self.stake_manager.total_rsol_supply += rsol_amount;
 
-        msg!(
-            "Stake: staker: {} sol: {} rsol: {}",
-            self.from.key().to_string(),
+        emit!(EventStake {
+            era: self.stake_manager.latest_era,
+            staker: self.from.key(),
+            mint_to: self.mint_to.key(),
             stake_amount,
             rsol_amount
-        );
+        });
         Ok(())
     }
 }

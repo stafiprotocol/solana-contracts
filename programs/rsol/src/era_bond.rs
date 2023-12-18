@@ -59,6 +59,13 @@ pub struct EraBond<'info> {
     pub system_program: Program<'info, System>,
 }
 
+#[event]
+pub struct EventEraBond {
+    pub era: u64,
+    pub stake_account: Pubkey,
+    pub bond_amount: u64,
+}
+
 impl<'info> EraBond<'info> {
     pub fn process(&mut self) -> Result<()> {
         require!(
@@ -144,11 +151,11 @@ impl<'info> EraBond<'info> {
             .pending_stake_accounts
             .push(self.stake_account.key());
 
-        msg!(
-            "EraBond: stake account: {} bond: {}",
-            self.stake_account.key().to_string(),
-            need_bond
-        );
+        emit!(EventEraBond {
+            era: self.stake_manager.latest_era,
+            stake_account: self.stake_account.key(),
+            bond_amount: need_bond
+        });
         Ok(())
     }
 }
