@@ -4,7 +4,7 @@ pub use crate::errors::Errors;
 
 #[account]
 #[derive(Debug)]
-pub struct StakeManager {
+pub struct StakeManagerAccount {
     pub admin: Pubkey,
     pub rsol_mint: Pubkey,
     pub fee_recipient: Pubkey,
@@ -72,7 +72,7 @@ impl EraProcessData {
     }
 }
 
-impl StakeManager {
+impl StakeManagerAccount {
     pub const POOL_SEED: &'static [u8] = b"pool_seed";
 
     pub const DEFAULT_UNBONDING_DURATION: u64 = 3;
@@ -85,13 +85,15 @@ impl StakeManager {
     pub const DEFAULT_SPLIT_ACCOUNT_LEN_LIMIT: u64 = 20;
 
     pub fn calc_rsol_amount(&self, sol_amount: u64) -> Result<u64> {
-        u64::try_from((sol_amount as u128) * (StakeManager::CAL_BASE as u128) / (self.rate as u128))
-            .map_err(|_| error!(Errors::CalculationFail))
+        u64::try_from(
+            (sol_amount as u128) * (StakeManagerAccount::CAL_BASE as u128) / (self.rate as u128),
+        )
+        .map_err(|_| error!(Errors::CalculationFail))
     }
 
     pub fn calc_sol_amount(&self, rsol_amount: u64) -> Result<u64> {
         u64::try_from(
-            (rsol_amount as u128) * (self.rate as u128) / (StakeManager::CAL_BASE as u128),
+            (rsol_amount as u128) * (self.rate as u128) / (StakeManagerAccount::CAL_BASE as u128),
         )
         .map_err(|_| error!(Errors::CalculationFail))
     }
@@ -99,7 +101,7 @@ impl StakeManager {
     pub fn calc_unstake_fee(&self, rsol_amount: u64) -> Result<u64> {
         u64::try_from(
             (rsol_amount as u128) * (self.unstake_fee_commission as u128)
-                / (StakeManager::CAL_BASE as u128),
+                / (StakeManagerAccount::CAL_BASE as u128),
         )
         .map_err(|_| error!(Errors::CalculationFail))
     }
@@ -113,11 +115,11 @@ impl StakeManager {
 
     pub fn calc_rate(&self, sol_amount: u64, rsol_amount: u64) -> Result<u64> {
         if sol_amount == 0 || rsol_amount == 0 {
-            return Ok(StakeManager::CAL_BASE);
+            return Ok(StakeManagerAccount::CAL_BASE);
         }
 
         u64::try_from(
-            (sol_amount as u128) * (StakeManager::CAL_BASE as u128) / (rsol_amount as u128),
+            (sol_amount as u128) * (StakeManagerAccount::CAL_BASE as u128) / (rsol_amount as u128),
         )
         .map_err(|_| error!(Errors::CalculationFail))
     }
@@ -132,7 +134,7 @@ impl StakeManager {
             new_rate - old_rate
         };
 
-        u64::try_from((diff as u128) * (StakeManager::CAL_BASE as u128) / (old_rate as u128))
+        u64::try_from((diff as u128) * (StakeManagerAccount::CAL_BASE as u128) / (old_rate as u128))
             .map_err(|_| error!(Errors::CalculationFail))
     }
 }

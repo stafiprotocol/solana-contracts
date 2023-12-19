@@ -1,18 +1,24 @@
 //! stafi solana bridge.
+mod errors;
+mod states;
+mod tx_accounts;
+
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, spl_token::instruction::AuthorityType};
-use minter::cpi::accounts::MintToken;
-use minter::{self};
+use anchor_spl::token::{burn, Burn};
+use mint_manager::cpi::accounts::MintToken;
+use mint_manager::{self};
 use std::collections::BTreeMap;
 use std::convert::Into;
 
-mod state;
-pub use crate::state::*;
+pub use crate::errors::*;
+pub use crate::states::*;
+pub use crate::tx_accounts::*;
 
 declare_id!("GF5hXVTvkErn2LTL5myFVbgqPXHnZYj2CkVGU6ZTEtyK");
 
 #[program]
-pub mod bridge {
+pub mod bridge_manager_program {
     use anchor_spl::token::{set_authority, SetAuthority};
 
     use super::*;
@@ -125,6 +131,16 @@ pub mod bridge {
         Ok(())
     }
 
+    #[event]
+    pub struct EventTransferOut {
+        pub transfer: Pubkey,
+        pub receiver: Vec<u8>,
+        pub amount: u64,
+        pub dest_chain_id: u8,
+        pub resource_id: [u8; 32],
+        pub deposit_nonce: u64,
+    }
+
     // Initiates a transfer by creating a deposit account
     pub fn transfer_out(
         ctx: Context<TransferOut>,
@@ -186,8 +202,19 @@ pub mod bridge {
                 ],
             )?;
         }
+
         //burn token of from account
-        token::burn(ctx.accounts.into(), amount)?;
+        burn(
+            CpiContext::new(
+                ctx.accounts.token_program.to_account_info(),
+                Burn {
+                    mint: ctx.accounts.mint.to_account_info(),
+                    from: ctx.accounts.from.to_account_info(),
+                    authority: ctx.accounts.authority.to_account_info(),
+                },
+            ),
+            amount,
+        )?;
 
         // update bridge deposit counts
         let bridge_account = &mut ctx.accounts.bridge;
@@ -295,7 +322,7 @@ pub mod bridge {
         }
 
         // Execute the mint proposal signed by the bridge.
-        let cpi_program = ctx.accounts.minter_program.to_account_info();
+        let cpi_program = ctx.accounts.mint_manager_program.to_account_info();
         let cpi_accounts = MintToken {
             mint_manager: ctx.accounts.mint_manager.to_account_info(),
             rsol_mint: ctx.accounts.mint.to_account_info(),
@@ -304,7 +331,7 @@ pub mod bridge {
             ext_mint_authority: ctx.accounts.bridge_signer.to_account_info(),
             token_program: ctx.accounts.token_program.to_account_info(),
         };
-        minter::cpi::mint_token(
+        mint_manager::cpi::mint_token(
             CpiContext::new(cpi_program, cpi_accounts).with_signer(&[&[
                 &ctx.accounts.bridge.key().to_bytes(),
                 &[ctx.accounts.bridge.nonce],

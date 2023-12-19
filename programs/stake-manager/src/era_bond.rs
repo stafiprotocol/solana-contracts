@@ -1,4 +1,4 @@
-use crate::{Errors, StakeManager};
+use crate::{Errors, StakeManagerAccount};
 use anchor_lang::prelude::*;
 use anchor_lang::system_program::{transfer, Transfer};
 use anchor_lang::{
@@ -17,7 +17,7 @@ use anchor_spl::stake::{Stake, StakeAccount};
 #[derive(Accounts)]
 pub struct EraBond<'info> {
     #[account(mut)]
-    pub stake_manager: Account<'info, StakeManager>,
+    pub stake_manager: Account<'info, StakeManagerAccount>,
 
     /// CHECK: validator account
     #[account(mut)]
@@ -27,7 +27,7 @@ pub struct EraBond<'info> {
         mut,
         seeds = [
             &stake_manager.key().to_bytes(),
-            StakeManager::POOL_SEED
+            StakeManagerAccount::POOL_SEED
         ],
         bump = stake_manager.pool_seed_bump
     )]
@@ -96,7 +96,7 @@ impl<'info> EraBond<'info> {
                 },
                 &[&[
                     &self.stake_manager.key().to_bytes(),
-                    StakeManager::POOL_SEED,
+                    StakeManagerAccount::POOL_SEED,
                     &[self.stake_manager.pool_seed_bump],
                 ]],
             ),
@@ -136,7 +136,7 @@ impl<'info> EraBond<'info> {
             ],
             &[&[
                 &self.stake_manager.key().to_bytes(),
-                StakeManager::POOL_SEED,
+                StakeManagerAccount::POOL_SEED,
                 &[self.stake_manager.pool_seed_bump],
             ]],
         )?;
