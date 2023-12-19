@@ -94,6 +94,17 @@ pub mod rsol {
         Ok(())
     }
 
+    pub fn set_rate_change_limit(
+        ctx: Context<SetRateChangeLimit>,
+        rate_change_limit: u64,
+    ) -> Result<()> {
+        check_context(&ctx)?;
+
+        ctx.accounts.process(rate_change_limit)?;
+
+        Ok(())
+    }
+
     pub fn add_validator(ctx: Context<AddValidator>, new_validator: Pubkey) -> Result<()> {
         check_context(&ctx)?;
 
