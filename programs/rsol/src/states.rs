@@ -123,13 +123,16 @@ impl StakeManager {
     }
 
     pub fn calc_rate_change(&self, old_rate: u64, new_rate: u64) -> Result<u64> {
+        if old_rate == 0 {
+            return Ok(0);
+        }
         let diff = if old_rate > new_rate {
             old_rate - new_rate
         } else {
             new_rate - old_rate
         };
 
-        u64::try_from((diff as u128) * (StakeManager::CAL_BASE as u128) / (self.rate as u128))
+        u64::try_from((diff as u128) * (StakeManager::CAL_BASE as u128) / (old_rate as u128))
             .map_err(|_| error!(Errors::CalculationFail))
     }
 }

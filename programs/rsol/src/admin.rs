@@ -71,6 +71,26 @@ impl<'info> SetUnbondingDuration<'info> {
 }
 
 #[derive(Accounts)]
+pub struct SetRateChangeLimit<'info> {
+    #[account(
+        mut, 
+        has_one = admin @ Errors::AdminNotMatch
+    )]
+    pub stake_manager: Account<'info, StakeManager>,
+
+    pub admin: Signer<'info>,
+}
+
+impl<'info> SetRateChangeLimit<'info> {
+    pub fn process(&mut self, rate_chagne_limit: u64) -> Result<()> {
+        self.stake_manager.rate_change_limit = rate_chagne_limit;
+
+        msg!("SetRateChangeLimit: rate change limit: {}", rate_chagne_limit);
+        Ok(())
+    }
+}
+
+#[derive(Accounts)]
 pub struct AddValidator<'info> {
     #[account(
         mut, 
