@@ -84,6 +84,7 @@ impl<'info> EraUpdateRate<'info> {
             )?;
 
             self.stake_manager.total_protocol_fee += protocol_fee;
+            self.stake_manager.total_rsol_supply += protocol_fee;
         }
 
         let cal_temp = self.stake_manager.active + self.stake_manager.era_process_data.new_active;
