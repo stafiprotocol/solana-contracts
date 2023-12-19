@@ -8,7 +8,7 @@ pub struct TransferAdmin<'info> {
         mut,
         has_one = admin @ Errors::AdminNotMatch
     )]
-    pub mint_manager: Account<'info, MintManager>,
+    pub mint_manager: Account<'info, MintManagerAccount>,
 
     pub admin: Signer<'info>,
 }
@@ -26,7 +26,7 @@ pub struct SetExtMintAuthorities<'info> {
         mut, 
         has_one = admin @ Errors::AdminNotMatch
     )]
-    pub mint_manager: Box<Account<'info, MintManager>>,
+    pub mint_manager: Box<Account<'info, MintManagerAccount>>,
 
     pub admin: Signer<'info>,
 }

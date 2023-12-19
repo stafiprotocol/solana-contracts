@@ -1,4 +1,4 @@
-use crate::{Errors, StakeManager};
+use crate::{Errors, StakeManagerAccount};
 use anchor_lang::prelude::*;
 use anchor_lang::{
     solana_program::{
@@ -16,7 +16,7 @@ pub struct TransferAdmin<'info> {
         mut, 
         has_one = admin @ Errors::AdminNotMatch
     )]
-    pub stake_manager: Account<'info, StakeManager>,
+    pub stake_manager: Account<'info, StakeManagerAccount>,
 
     pub admin: Signer<'info>,
 }
@@ -36,7 +36,7 @@ pub struct SetMinStakeAmount<'info> {
         mut, 
         has_one = admin @ Errors::AdminNotMatch
     )]
-    pub stake_manager: Account<'info, StakeManager>,
+    pub stake_manager: Account<'info, StakeManagerAccount>,
 
     pub admin: Signer<'info>,
 }
@@ -56,7 +56,7 @@ pub struct SetUnbondingDuration<'info> {
         mut, 
         has_one = admin @ Errors::AdminNotMatch
     )]
-    pub stake_manager: Account<'info, StakeManager>,
+    pub stake_manager: Account<'info, StakeManagerAccount>,
 
     pub admin: Signer<'info>,
 }
@@ -76,7 +76,7 @@ pub struct SetRateChangeLimit<'info> {
         mut, 
         has_one = admin @ Errors::AdminNotMatch
     )]
-    pub stake_manager: Account<'info, StakeManager>,
+    pub stake_manager: Account<'info, StakeManagerAccount>,
 
     pub admin: Signer<'info>,
 }
@@ -96,7 +96,7 @@ pub struct AddValidator<'info> {
         mut, 
         has_one = admin @ Errors::AdminNotMatch
     )]
-    pub stake_manager: Account<'info, StakeManager>,
+    pub stake_manager: Account<'info, StakeManagerAccount>,
 
     pub admin: Signer<'info>,
 }
@@ -118,7 +118,7 @@ pub struct RemoveValidator<'info> {
         mut, 
         has_one = admin @ Errors::AdminNotMatch
     )]
-    pub stake_manager: Account<'info, StakeManager>,
+    pub stake_manager: Account<'info, StakeManagerAccount>,
 
     pub admin: Signer<'info>,
 }
@@ -140,7 +140,7 @@ pub struct Redelegate<'info> {
         mut, 
         has_one = admin @ Errors::AdminNotMatch
     )]
-    pub stake_manager: Account<'info, StakeManager>,
+    pub stake_manager: Account<'info, StakeManagerAccount>,
 
     pub admin: Signer<'info>,
 
@@ -151,7 +151,7 @@ pub struct Redelegate<'info> {
     #[account(
         seeds = [
             &stake_manager.key().to_bytes(),
-            StakeManager::POOL_SEED
+            StakeManagerAccount::POOL_SEED
         ],
         bump = stake_manager.pool_seed_bump
     )]
@@ -274,7 +274,7 @@ impl<'info> Redelegate<'info> {
                 ],
                 &[&[
                     &self.stake_manager.key().to_bytes(),
-                    StakeManager::POOL_SEED,
+                    StakeManagerAccount::POOL_SEED,
                     &[self.stake_manager.pool_seed_bump],
                 ]],
             )?;
@@ -302,7 +302,7 @@ impl<'info> Redelegate<'info> {
                 ],
                 &[&[
                     &self.stake_manager.key().to_bytes(),
-                    StakeManager::POOL_SEED,
+                    StakeManagerAccount::POOL_SEED,
                     &[self.stake_manager.pool_seed_bump],
                 ]],
             )?;
@@ -350,7 +350,7 @@ impl<'info> Redelegate<'info> {
                 ],
                 &[&[
                     &self.stake_manager.key().to_bytes(),
-                    StakeManager::POOL_SEED,
+                    StakeManagerAccount::POOL_SEED,
                     &[self.stake_manager.pool_seed_bump],
                 ]],
             )?;

@@ -1,12 +1,12 @@
-use crate::{Errors, StakeManager};
+use crate::{Errors, StakeManagerAccount};
 use anchor_lang::prelude::*;
 use anchor_lang::solana_program::system_program;
 use anchor_lang::system_program::{transfer, Transfer};
 use anchor_spl::token::{Mint, Token, TokenAccount};
 
-use minter::cpi::accounts::MintToken;
-use minter::program::Minter;
-use minter::{self, MintManager};
+use mint_manager::cpi::accounts::MintToken;
+use mint_manager::program::MintManagerProgram;
+use mint_manager::{self, MintManagerAccount};
 
 #[derive(Accounts)]
 pub struct Stake<'info> {
@@ -14,13 +14,13 @@ pub struct Stake<'info> {
         mut,
         has_one = rsol_mint @Errors::MintAccountNotMatch,
     )]
-    pub stake_manager: Account<'info, StakeManager>,
+    pub stake_manager: Account<'info, StakeManagerAccount>,
 
     #[account(
         mut,
         seeds = [
             &stake_manager.key().to_bytes(),
-            StakeManager::POOL_SEED,
+            StakeManagerAccount::POOL_SEED,
         ],
         bump = stake_manager.pool_seed_bump
     )]
@@ -36,7 +36,7 @@ pub struct Stake<'info> {
     #[account(
         has_one = rsol_mint @Errors::MintAccountNotMatch
     )]
-    pub mint_manager: Box<Account<'info, MintManager>>,
+    pub mint_manager: Box<Account<'info, MintManagerAccount>>,
 
     #[account(mut)]
     pub rsol_mint: Box<Account<'info, Mint>>,
@@ -47,10 +47,10 @@ pub struct Stake<'info> {
     )]
     pub mint_to: Box<Account<'info, TokenAccount>>,
 
-    /// CHECK:  check on minter program
+    /// CHECK:  check on mint manager program
     pub mint_authority: UncheckedAccount<'info>,
 
-    pub minter_program: Program<'info, Minter>,
+    pub mint_manager_program: Program<'info, MintManagerProgram>,
     pub system_program: Program<'info, System>,
     pub token_program: Program<'info, Token>,
 }
@@ -93,7 +93,7 @@ impl<'info> Stake<'info> {
         )?;
 
         // mint rsol
-        let cpi_program = self.minter_program.to_account_info();
+        let cpi_program = self.mint_manager_program.to_account_info();
         let cpi_accounts = MintToken {
             mint_manager: self.mint_manager.to_account_info(),
             rsol_mint: self.rsol_mint.to_account_info(),
@@ -102,10 +102,10 @@ impl<'info> Stake<'info> {
             ext_mint_authority: self.stake_pool.to_account_info(),
             token_program: self.token_program.to_account_info(),
         };
-        minter::cpi::mint_token(
+        mint_manager::cpi::mint_token(
             CpiContext::new(cpi_program, cpi_accounts).with_signer(&[&[
                 &self.stake_manager.key().to_bytes(),
-                StakeManager::POOL_SEED,
+                StakeManagerAccount::POOL_SEED,
                 &[self.stake_manager.pool_seed_bump],
             ]]),
             rsol_amount,

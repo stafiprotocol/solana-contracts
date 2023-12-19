@@ -1,4 +1,4 @@
-use crate::{Errors, StakeManager};
+use crate::{Errors, StakeManagerAccount};
 use anchor_lang::prelude::*;
 use anchor_lang::solana_program::sysvar::stake_history;
 use anchor_spl::stake::{withdraw, Stake, StakeAccount, Withdraw};
@@ -6,13 +6,13 @@ use anchor_spl::stake::{withdraw, Stake, StakeAccount, Withdraw};
 #[derive(Accounts)]
 pub struct EraWithdraw<'info> {
     #[account(mut)]
-    pub stake_manager: Account<'info, StakeManager>,
+    pub stake_manager: Account<'info, StakeManagerAccount>,
 
     #[account(
         mut,
         seeds = [
             &stake_manager.key().to_bytes(),
-            StakeManager::POOL_SEED
+            StakeManagerAccount::POOL_SEED
         ],
         bump = stake_manager.pool_seed_bump
     )]
@@ -68,7 +68,7 @@ impl<'info> EraWithdraw<'info> {
                 },
                 &[&[
                     &self.stake_manager.key().to_bytes(),
-                    StakeManager::POOL_SEED,
+                    StakeManagerAccount::POOL_SEED,
                     &[self.stake_manager.pool_seed_bump],
                 ]],
             ),

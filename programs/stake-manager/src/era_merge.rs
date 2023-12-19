@@ -1,4 +1,4 @@
-use crate::{Errors, StakeManager};
+use crate::{Errors, StakeManagerAccount};
 use anchor_lang::prelude::*;
 use anchor_lang::solana_program::sysvar::stake_history;
 use anchor_lang::solana_program::{program::invoke_signed, stake};
@@ -7,7 +7,7 @@ use anchor_spl::stake::{Stake, StakeAccount};
 #[derive(Accounts)]
 pub struct EraMerge<'info> {
     #[account(mut)]
-    pub stake_manager: Account<'info, StakeManager>,
+    pub stake_manager: Account<'info, StakeManagerAccount>,
 
     #[account(mut)]
     pub src_stake_account: Box<Account<'info, StakeAccount>>,
@@ -18,7 +18,7 @@ pub struct EraMerge<'info> {
     #[account(
         seeds = [
             &stake_manager.key().to_bytes(),
-            StakeManager::POOL_SEED
+            StakeManagerAccount::POOL_SEED
         ],
         bump = stake_manager.pool_seed_bump
     )]
@@ -102,7 +102,7 @@ impl<'info> EraMerge<'info> {
             ],
             &[&[
                 &self.stake_manager.key().to_bytes(),
-                StakeManager::POOL_SEED,
+                StakeManagerAccount::POOL_SEED,
                 &[self.stake_manager.pool_seed_bump],
             ]],
         )?;
