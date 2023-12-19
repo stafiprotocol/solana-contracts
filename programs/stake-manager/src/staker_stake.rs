@@ -5,7 +5,7 @@ use anchor_lang::system_program::{transfer, Transfer};
 use anchor_spl::token::{Mint, Token, TokenAccount};
 
 use mint_manager::cpi::accounts::MintToken;
-use mint_manager::program::MintManagerProgram;
+use mint_manager::program::MintManager;
 use mint_manager::{self, MintManagerAccount};
 
 #[derive(Accounts)]
@@ -50,7 +50,7 @@ pub struct Stake<'info> {
     /// CHECK:  check on mint manager program
     pub mint_authority: UncheckedAccount<'info>,
 
-    pub mint_manager_program: Program<'info, MintManagerProgram>,
+    pub mint_manager_program: Program<'info, MintManager>,
     pub system_program: Program<'info, System>,
     pub token_program: Program<'info, Token>,
 }

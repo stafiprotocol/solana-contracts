@@ -18,7 +18,7 @@ pub use crate::tx_accounts::*;
 declare_id!("GF5hXVTvkErn2LTL5myFVbgqPXHnZYj2CkVGU6ZTEtyK");
 
 #[program]
-pub mod bridge_manager_program {
+pub mod bridge_manager {
     use anchor_spl::token::{set_authority, SetAuthority};
 
     use super::*;
