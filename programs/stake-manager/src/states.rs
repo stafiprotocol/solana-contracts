@@ -75,10 +75,10 @@ impl EraProcessData {
 impl StakeManager {
     pub const POOL_SEED: &'static [u8] = b"pool_seed";
 
-    pub const DEFAULT_UNBONDING_DURATION: u64 = 3;
+    pub const DEFAULT_UNBONDING_DURATION: u64 = 2;
     pub const CAL_BASE: u64 = 1_000_000_000;
     pub const DEFAULT_MIN_STAKE_AMOUNT: u64 = 1_000_000;
-    pub const DEFAULT_UNSTAKE_FEE_COMMISSION: u64 = 100_000_000;
+    pub const DEFAULT_UNSTAKE_FEE_COMMISSION: u64 = 0;
     pub const DEFAULT_PROTOCOL_FEE_COMMISSION: u64 = 100_000_000;
     pub const DEFAULT_RATE_CHANGE_LIMIT: u64 = 500_000;
     pub const DEFAULT_STAKE_ACCOUNT_LEN_LIMIT: u64 = 100;
@@ -106,7 +106,8 @@ impl StakeManager {
 
     pub fn calc_protocol_fee(&self, reward: u64) -> Result<u64> {
         u64::try_from(
-            (reward as u128) * (self.protocol_fee_commission as u128) / (self.rate as u128),
+            (reward as u128) * (self.protocol_fee_commission as u128)
+                / (StakeManager::CAL_BASE as u128),
         )
         .map_err(|_| error!(Errors::CalculationFail))
     }
