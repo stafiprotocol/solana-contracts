@@ -6,17 +6,17 @@ use anchor_spl::token::{Mint, TokenAccount};
 
 pub use crate::errors::Errors;
 use crate::EraProcessData;
-pub use crate::StakeManagerAccount;
+pub use crate::StakeManager;
 
 #[derive(Accounts)]
 pub struct Initialize<'info> {
     #[account(zero)]
-    pub stake_manager: Box<Account<'info, StakeManagerAccount>>,
+    pub stake_manager: Box<Account<'info, StakeManager>>,
 
     #[account(
         seeds = [
             &stake_manager.key().to_bytes(),
-            StakeManagerAccount::POOL_SEED,
+            StakeManager::POOL_SEED,
         ],
         bump,
     )]
@@ -64,19 +64,19 @@ impl<'info> Initialize<'info> {
             Errors::InitializeDataMatch
         );
 
-        self.stake_manager.set_inner(StakeManagerAccount {
+        self.stake_manager.set_inner(StakeManager {
             admin: self.admin.key(),
             rsol_mint: initialize_data.rsol_mint,
             rent_exempt_for_pool_acc,
             pool_seed_bump,
             fee_recipient: self.fee_recipient.key(),
-            min_stake_amount: StakeManagerAccount::DEFAULT_MIN_STAKE_AMOUNT,
-            unstake_fee_commission: StakeManagerAccount::DEFAULT_UNSTAKE_FEE_COMMISSION,
-            protocol_fee_commission: StakeManagerAccount::DEFAULT_PROTOCOL_FEE_COMMISSION,
-            rate_change_limit: StakeManagerAccount::DEFAULT_RATE_CHANGE_LIMIT,
-            stake_accounts_len_limit: StakeManagerAccount::DEFAULT_STAKE_ACCOUNT_LEN_LIMIT,
-            split_accounts_len_limit: StakeManagerAccount::DEFAULT_SPLIT_ACCOUNT_LEN_LIMIT,
-            unbonding_duration: StakeManagerAccount::DEFAULT_UNBONDING_DURATION,
+            min_stake_amount: StakeManager::DEFAULT_MIN_STAKE_AMOUNT,
+            unstake_fee_commission: StakeManager::DEFAULT_UNSTAKE_FEE_COMMISSION,
+            protocol_fee_commission: StakeManager::DEFAULT_PROTOCOL_FEE_COMMISSION,
+            rate_change_limit: StakeManager::DEFAULT_RATE_CHANGE_LIMIT,
+            stake_accounts_len_limit: StakeManager::DEFAULT_STAKE_ACCOUNT_LEN_LIMIT,
+            split_accounts_len_limit: StakeManager::DEFAULT_SPLIT_ACCOUNT_LEN_LIMIT,
+            unbonding_duration: StakeManager::DEFAULT_UNBONDING_DURATION,
             latest_era: initialize_data.latest_era,
             rate: initialize_data.rate,
             total_rsol_supply: initialize_data.total_rsol_supply,
@@ -103,12 +103,12 @@ impl<'info> Initialize<'info> {
 #[derive(Accounts)]
 pub struct MigrateStakeAccount<'info> {
     #[account(mut)]
-    pub stake_manager: Account<'info, StakeManagerAccount>,
+    pub stake_manager: Account<'info, StakeManager>,
 
     #[account(
         seeds = [
             &stake_manager.key().to_bytes(),
-            StakeManagerAccount::POOL_SEED,
+            StakeManager::POOL_SEED,
         ],
         bump = stake_manager.pool_seed_bump
     )]

@@ -1,10 +1,10 @@
-use crate::{EraProcessData, Errors, StakeManagerAccount};
+use crate::{EraProcessData, Errors, StakeManager};
 use anchor_lang::prelude::*;
 
 #[derive(Accounts)]
 pub struct EraNew<'info> {
     #[account(mut)]
-    pub stake_manager: Account<'info, StakeManagerAccount>,
+    pub stake_manager: Account<'info, StakeManager>,
 
     pub clock: Sysvar<'info, Clock>,
 }

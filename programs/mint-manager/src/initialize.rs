@@ -8,13 +8,13 @@ pub use crate::ID;
 #[derive(Accounts)]
 pub struct Initialize<'info> {
     #[account(zero)]
-    pub mint_manager: Box<Account<'info, MintManagerAccount>>,
+    pub mint_manager: Box<Account<'info, MintManager>>,
 
     /// CHECK: pda
     #[account(
         seeds = [
             &mint_manager.key().to_bytes(),
-            MintManagerAccount::MINT_AUTHORITY_SEED,
+            MintManager::MINT_AUTHORITY_SEED,
         ],
         bump,
     )]
@@ -38,7 +38,7 @@ impl<'info> Initialize<'info> {
             Errors::InvalidTokenAccountData
         );
 
-        self.mint_manager.set_inner(MintManagerAccount {
+        self.mint_manager.set_inner(MintManager {
             admin: self.admin.key(),
             rsol_mint: self.rsol_mint.key(),
             mint_authority_seed_bump,

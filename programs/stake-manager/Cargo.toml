@@ -6,7 +6,7 @@ edition = "2021"
 
 [lib]
 crate-type = ["cdylib", "lib"]
-name = "stake_manager"
+name = "stake_manager_program"
 
 [features]
 no-entrypoint = []

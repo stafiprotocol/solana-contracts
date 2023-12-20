@@ -1,17 +1,17 @@
-use crate::{Errors, StakeManagerAccount, UnstakeAccount};
+use crate::{Errors, StakeManager, UnstakeAccount};
 use anchor_lang::prelude::*;
 use anchor_lang::system_program::{transfer, Transfer};
 
 #[derive(Accounts)]
 pub struct Withdraw<'info> {
     #[account(mut)]
-    pub stake_manager: Account<'info, StakeManagerAccount>,
+    pub stake_manager: Account<'info, StakeManager>,
 
     #[account(
         mut,
         seeds = [
             &stake_manager.key().to_bytes(),
-            StakeManagerAccount::POOL_SEED,
+            StakeManager::POOL_SEED,
         ],
         bump = stake_manager.pool_seed_bump
     )]
@@ -78,7 +78,7 @@ impl<'info> Withdraw<'info> {
                 },
                 &[&[
                     &self.stake_manager.key().to_bytes(),
-                    StakeManagerAccount::POOL_SEED,
+                    StakeManager::POOL_SEED,
                     &[self.stake_manager.pool_seed_bump],
                 ]],
             ),

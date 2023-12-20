@@ -9,7 +9,7 @@ pub struct MintToken<'info> {
     #[account(
         has_one = rsol_mint
     )]
-    pub mint_manager: Box<Account<'info, MintManagerAccount>>,
+    pub mint_manager: Box<Account<'info, MintManager>>,
 
     #[account(mut)]
     pub rsol_mint: Box<Account<'info, Mint>>,
@@ -24,7 +24,7 @@ pub struct MintToken<'info> {
     #[account(
         seeds = [
             &mint_manager.key().to_bytes(),
-            MintManagerAccount::MINT_AUTHORITY_SEED
+            MintManager::MINT_AUTHORITY_SEED
         ],
         bump = mint_manager.mint_authority_seed_bump
     )]
@@ -55,7 +55,7 @@ impl<'info> MintToken<'info> {
                 },
                 &[&[
                     &self.mint_manager.key().to_bytes(),
-                    MintManagerAccount::MINT_AUTHORITY_SEED,
+                    MintManager::MINT_AUTHORITY_SEED,
                     &[self.mint_manager.mint_authority_seed_bump],
                 ]],
             ),

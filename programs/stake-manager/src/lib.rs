@@ -45,7 +45,7 @@ fn check_context<T: Bumps>(ctx: &Context<T>) -> Result<()> {
 }
 
 #[program]
-pub mod stake_manager {
+pub mod stake_manager_program {
 
     use super::*;
 

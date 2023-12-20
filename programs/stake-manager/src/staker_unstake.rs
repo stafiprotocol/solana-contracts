@@ -1,4 +1,4 @@
-use crate::{Errors, StakeManagerAccount, UnstakeAccount};
+use crate::{Errors, StakeManager, UnstakeAccount};
 use anchor_lang::prelude::*;
 use anchor_spl::token::{
     burn, transfer as transfer_token, Burn, Mint, Token, TokenAccount, Transfer as TransferToken,
@@ -11,7 +11,7 @@ pub struct Unstake<'info> {
         has_one = fee_recipient @ Errors::FeeRecipientNotMatch,
         has_one = rsol_mint @ Errors::MintAccountNotMatch
     )]
-    pub stake_manager: Box<Account<'info, StakeManagerAccount>>,
+    pub stake_manager: Box<Account<'info, StakeManager>>,
 
     #[account(mut)]
     pub rsol_mint: Box<Account<'info, Mint>>,

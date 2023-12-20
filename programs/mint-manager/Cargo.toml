@@ -6,7 +6,7 @@ edition = "2021"
 
 [lib]
 crate-type = ["cdylib", "lib"]
-name = "mint_manager"
+name = "mint_manager_program"
 
 [features]
 no-entrypoint = []
