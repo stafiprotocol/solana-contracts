@@ -104,10 +104,9 @@ impl StakeManager {
         .map_err(|_| error!(Errors::CalculationFail))
     }
 
-    pub fn calc_protocol_fee(&self, reward: u64) -> Result<u64> {
+    pub fn calc_protocol_fee(&self, reward_sol: u64) -> Result<u64> {
         u64::try_from(
-            (reward as u128) * (self.protocol_fee_commission as u128)
-                / (StakeManager::CAL_BASE as u128),
+            (reward_sol as u128) * (self.protocol_fee_commission as u128) / (self.rate as u128),
         )
         .map_err(|_| error!(Errors::CalculationFail))
     }
