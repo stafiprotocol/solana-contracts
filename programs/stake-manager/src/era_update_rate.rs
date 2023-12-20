@@ -3,7 +3,7 @@ use anchor_lang::prelude::*;
 use anchor_spl::token::{Mint, Token, TokenAccount};
 
 use mint_manager::cpi::accounts::MintToken;
-use mint_manager::program::MintManagerProgram;
+use mint_manager::program::MintManager;
 use mint_manager::{self, MintManagerAccount};
 #[derive(Accounts)]
 pub struct EraUpdateRate<'info> {
@@ -36,7 +36,7 @@ pub struct EraUpdateRate<'info> {
     /// CHECK:  check in mint-manager program
     pub mint_authority: UncheckedAccount<'info>,
 
-    pub mint_manager_program: Program<'info, MintManagerProgram>,
+    pub mint_manager_program: Program<'info, MintManager>,
     pub token_program: Program<'info, Token>,
 }
 
