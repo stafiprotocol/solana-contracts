@@ -2,7 +2,7 @@ use anchor_lang::prelude::*;
 use std::collections::BTreeMap;
 
 #[account]
-pub struct BridgeManagerAccount {
+pub struct Bridge {
     pub admin: Pubkey,
     pub owners: Vec<Pubkey>,
     pub threshold: u64,
@@ -19,7 +19,7 @@ pub struct BridgeManagerAccount {
 }
 
 #[account]
-pub struct MintProposalAccount {
+pub struct MintProposal {
     // The bridge account this proposal belongs to.
     pub bridge: Pubkey,
     // signers[index] is true if bridge.owners[index] signed the proposal.

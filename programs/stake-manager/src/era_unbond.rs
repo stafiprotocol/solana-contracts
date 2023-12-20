@@ -1,4 +1,4 @@
-use crate::{Errors, StakeManagerAccount};
+use crate::{Errors, StakeManager};
 use anchor_lang::prelude::*;
 use anchor_lang::solana_program::sysvar::stake_history;
 use anchor_lang::{
@@ -16,12 +16,12 @@ use anchor_spl::stake::{
 #[derive(Accounts)]
 pub struct EraUnbond<'info> {
     #[account(mut)]
-    pub stake_manager: Account<'info, StakeManagerAccount>,
+    pub stake_manager: Account<'info, StakeManager>,
 
     #[account(
         seeds = [
             &stake_manager.key().to_bytes(),
-            StakeManagerAccount::POOL_SEED
+            StakeManager::POOL_SEED
         ],
         bump = stake_manager.pool_seed_bump
     )]
@@ -132,7 +132,7 @@ impl<'info> EraUnbond<'info> {
                 },
                 &[&[
                     &self.stake_manager.key().to_bytes(),
-                    StakeManagerAccount::POOL_SEED,
+                    StakeManager::POOL_SEED,
                     &[self.stake_manager.pool_seed_bump],
                 ]],
             ))?;
@@ -180,7 +180,7 @@ impl<'info> EraUnbond<'info> {
                 ],
                 &[&[
                     &self.stake_manager.key().to_bytes(),
-                    StakeManagerAccount::POOL_SEED,
+                    StakeManager::POOL_SEED,
                     &[self.stake_manager.pool_seed_bump],
                 ]],
             )?;
@@ -195,7 +195,7 @@ impl<'info> EraUnbond<'info> {
                 },
                 &[&[
                     &self.stake_manager.key().to_bytes(),
-                    StakeManagerAccount::POOL_SEED,
+                    StakeManager::POOL_SEED,
                     &[self.stake_manager.pool_seed_bump],
                 ]],
             ))?;

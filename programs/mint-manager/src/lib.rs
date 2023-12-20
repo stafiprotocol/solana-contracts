@@ -27,7 +27,7 @@ fn check_context<T: Bumps>(ctx: &Context<T>) -> Result<()> {
 }
 
 #[program]
-pub mod mint_manager {
+pub mod mint_manager_program {
     use super::*;
 
     pub fn initialize(ctx: Context<Initialize>, ext_mint_authorities: Vec<Pubkey>) -> Result<()> {

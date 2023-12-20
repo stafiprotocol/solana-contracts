@@ -6,8 +6,8 @@ mod tx_accounts;
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, spl_token::instruction::AuthorityType};
 use anchor_spl::token::{burn, Burn};
-use mint_manager::cpi::accounts::MintToken;
-use mint_manager::{self};
+use mint_manager_program::cpi::accounts::MintToken;
+use mint_manager_program::{self};
 use std::collections::BTreeMap;
 use std::convert::Into;
 
@@ -18,7 +18,7 @@ pub use crate::tx_accounts::*;
 declare_id!("EPfxck35M3NJwsjreExLLyQAgAL3y5uWfzddY6cHBrGy");
 
 #[program]
-pub mod bridge_manager {
+pub mod bridge_manager_program {
     use anchor_spl::token::{set_authority, SetAuthority};
 
     use super::*;
@@ -331,7 +331,7 @@ pub mod bridge_manager {
             ext_mint_authority: ctx.accounts.bridge_signer.to_account_info(),
             token_program: ctx.accounts.token_program.to_account_info(),
         };
-        mint_manager::cpi::mint_token(
+        mint_manager_program::cpi::mint_token(
             CpiContext::new(cpi_program, cpi_accounts).with_signer(&[&[
                 &ctx.accounts.bridge.key().to_bytes(),
                 &[ctx.accounts.bridge.nonce],

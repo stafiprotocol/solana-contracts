@@ -1,8 +1,8 @@
 use anchor_lang::prelude::*;
 use anchor_lang::solana_program::system_program;
 use anchor_spl::token::{Mint, Token, TokenAccount};
-use mint_manager::program::MintManager;
-use mint_manager::{self, MintManagerAccount};
+use mint_manager_program::program::MintManagerProgram;
+use mint_manager_program::{self, MintManager};
 use std::convert::Into;
 use crate::states::*;
 use crate::errors::*;
@@ -13,7 +13,7 @@ pub struct AdminAuth<'info> {
         mut, 
         has_one = admin @ Errors::AdminNotMatch
     )]
-    pub bridge: Box<Account<'info, BridgeManagerAccount>>,
+    pub bridge: Box<Account<'info, Bridge>>,
 
     pub admin: Signer<'info>,
 }
@@ -23,7 +23,7 @@ pub struct SetMintAuthority<'info> {
     #[account(
         has_one = admin @ Errors::AdminNotMatch
     )]
-    pub bridge: Box<Account<'info, BridgeManagerAccount>>,
+    pub bridge: Box<Account<'info, Bridge>>,
 
     pub admin: Signer<'info>,
 
@@ -45,7 +45,7 @@ pub struct SetMintAuthority<'info> {
 #[derive(Accounts)]
 pub struct CreateBridge<'info> {
     #[account(zero)]
-    pub bridge: Box<Account<'info, BridgeManagerAccount>>,
+    pub bridge: Box<Account<'info, Bridge>>,
 
     pub rent: Sysvar<'info, Rent>,
 }
@@ -53,7 +53,7 @@ pub struct CreateBridge<'info> {
 #[derive(Accounts)]
 pub struct TransferOut<'info> {
     #[account(mut)]
-    pub bridge: Box<Account<'info, BridgeManagerAccount>>,
+    pub bridge: Box<Account<'info, Bridge>>,
 
     /// CHECK: token account's owner
     #[account(
@@ -81,9 +81,9 @@ pub struct TransferOut<'info> {
 
 #[derive(Accounts)]
 pub struct CreateMintProposal<'info> {
-    pub bridge: Box<Account<'info, BridgeManagerAccount>>,
+    pub bridge: Box<Account<'info, Bridge>>,
     #[account(zero)]
-    pub proposal: Box<Account<'info, MintProposalAccount>>,
+    pub proposal: Box<Account<'info, MintProposal>>,
 
     // token account which has been initiated
     pub to: Box<Account<'info, TokenAccount>>,
@@ -101,7 +101,7 @@ pub struct Approve<'info> {
     #[account(
         constraint = bridge.owner_set_seqno == proposal.owner_set_seqno
     )]
-    pub bridge: Box<Account<'info, BridgeManagerAccount>>,
+    pub bridge: Box<Account<'info, Bridge>>,
 
     /// CHECK: pda
     #[account(
@@ -116,7 +116,7 @@ pub struct Approve<'info> {
         mut, 
         has_one = bridge
     )]
-    pub proposal: Box<Account<'info, MintProposalAccount>>,
+    pub proposal: Box<Account<'info, MintProposal>>,
 
     // One of the bridge owners. Checked in the handler.
     #[account(
@@ -137,12 +137,12 @@ pub struct Approve<'info> {
     )]
     pub to: Box<Account<'info, TokenAccount>>,
 
-    pub mint_manager: Box<Account<'info, MintManagerAccount>>,
+    pub mint_manager: Box<Account<'info, MintManager>>,
 
     /// CHECK:  check on mint manager program
     pub mint_authority: UncheckedAccount<'info>,
 
-    pub mint_manager_program: Program<'info, MintManager>,
+    pub mint_manager_program: Program<'info, MintManagerProgram>,
     pub token_program: Program<'info, Token>,
 }
 

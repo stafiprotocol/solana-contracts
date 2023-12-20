@@ -1,28 +1,28 @@
-use crate::{Errors, StakeManagerAccount};
+use crate::{Errors, StakeManager};
 use anchor_lang::prelude::*;
 use anchor_spl::token::{Mint, Token, TokenAccount};
 
-use mint_manager::cpi::accounts::MintToken;
-use mint_manager::program::MintManager;
-use mint_manager::{self, MintManagerAccount};
+use mint_manager_program::cpi::accounts::MintToken;
+use mint_manager_program::program::MintManagerProgram;
+use mint_manager_program::{self, MintManager};
 #[derive(Accounts)]
 pub struct EraUpdateRate<'info> {
     #[account(
         mut, 
         has_one = fee_recipient @ Errors::FeeRecipientNotMatch
     )]
-    pub stake_manager: Account<'info, StakeManagerAccount>,
+    pub stake_manager: Account<'info, StakeManager>,
 
     #[account(
         seeds = [
             &stake_manager.key().to_bytes(),
-            StakeManagerAccount::POOL_SEED,
+            StakeManager::POOL_SEED,
         ],
         bump = stake_manager.pool_seed_bump
     )]
     pub stake_pool: SystemAccount<'info>,
 
-    pub mint_manager: Box<Account<'info, MintManagerAccount>>,
+    pub mint_manager: Box<Account<'info, MintManager>>,
 
     #[account(mut)]
     pub rsol_mint: Box<Account<'info, Mint>>,
@@ -36,7 +36,7 @@ pub struct EraUpdateRate<'info> {
     /// CHECK:  check in mint-manager program
     pub mint_authority: UncheckedAccount<'info>,
 
-    pub mint_manager_program: Program<'info, MintManager>,
+    pub mint_manager_program: Program<'info, MintManagerProgram>,
     pub token_program: Program<'info, Token>,
 }
 
@@ -74,10 +74,10 @@ impl<'info> EraUpdateRate<'info> {
                 ext_mint_authority: self.stake_pool.to_account_info(),
                 token_program: self.token_program.to_account_info(),
             };
-            mint_manager::cpi::mint_token(
+            mint_manager_program::cpi::mint_token(
                 CpiContext::new(cpi_program, cpi_accounts).with_signer(&[&[
                     &self.stake_manager.key().to_bytes(),
-                    StakeManagerAccount::POOL_SEED,
+                    StakeManager::POOL_SEED,
                     &[self.stake_manager.pool_seed_bump],
                 ]]),
                 protocol_fee,
