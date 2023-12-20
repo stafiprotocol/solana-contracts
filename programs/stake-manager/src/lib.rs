@@ -94,6 +94,17 @@ pub mod stake_manager_program {
         Ok(())
     }
 
+    pub fn set_unstake_fee_commission(
+        ctx: Context<SetUnstakeFeeCommission>,
+        unstake_fee_commission: u64,
+    ) -> Result<()> {
+        check_context(&ctx)?;
+
+        ctx.accounts.process(unstake_fee_commission)?;
+
+        Ok(())
+    }
+
     pub fn set_rate_change_limit(
         ctx: Context<SetRateChangeLimit>,
         rate_change_limit: u64,

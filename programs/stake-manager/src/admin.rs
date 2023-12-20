@@ -71,6 +71,26 @@ impl<'info> SetUnbondingDuration<'info> {
 }
 
 #[derive(Accounts)]
+pub struct SetUnstakeFeeCommission<'info> {
+    #[account(
+        mut, 
+        has_one = admin @ Errors::AdminNotMatch
+    )]
+    pub stake_manager: Account<'info, StakeManager>,
+
+    pub admin: Signer<'info>,
+}
+
+impl<'info> SetUnstakeFeeCommission<'info> {
+    pub fn process(&mut self, unstake_fee_commission: u64) -> Result<()> {
+        self.stake_manager.unstake_fee_commission = unstake_fee_commission;
+
+        msg!("SetUnstakeFeeCommission: duration: {}", unstake_fee_commission);
+        Ok(())
+    }
+}
+
+#[derive(Accounts)]
 pub struct SetRateChangeLimit<'info> {
     #[account(
         mut, 
