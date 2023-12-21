@@ -14,7 +14,7 @@ pub struct Stake<'info> {
         mut,
         has_one = rsol_mint @Errors::MintAccountNotMatch,
     )]
-    pub stake_manager: Account<'info, StakeManager>,
+    pub stake_manager: Box<Account<'info, StakeManager>>,
 
     #[account(
         mut,

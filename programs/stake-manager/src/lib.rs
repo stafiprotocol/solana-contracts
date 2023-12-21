@@ -10,6 +10,7 @@ pub mod era_update_rate;
 pub mod era_withdraw;
 pub mod errors;
 pub mod initialize;
+pub mod redelegate;
 pub mod staker_stake;
 pub mod staker_unstake;
 pub mod staker_withdraw;
@@ -25,6 +26,7 @@ pub use crate::era_update_rate::*;
 pub use crate::era_withdraw::*;
 pub use crate::errors::Errors;
 pub use crate::initialize::*;
+pub use crate::redelegate::*;
 pub use crate::staker_stake::*;
 pub use crate::staker_unstake::*;
 pub use crate::staker_withdraw::*;
@@ -74,6 +76,14 @@ pub mod stake_manager_program {
         check_context(&ctx)?;
 
         ctx.accounts.process(new_admin)?;
+
+        Ok(())
+    }
+
+    pub fn transfer_balancer(ctx: Context<TransferBalancer>, new_balancer: Pubkey) -> Result<()> {
+        check_context(&ctx)?;
+
+        ctx.accounts.process(new_balancer)?;
 
         Ok(())
     }
@@ -131,6 +141,24 @@ pub mod stake_manager_program {
 
         Ok(())
     }
+
+    pub fn realloc_stake_manager(ctx: Context<ReallocStakeManager>, new_size: u32) -> Result<()> {
+        check_context(&ctx)?;
+
+        ctx.accounts.process(new_size)?;
+
+        Ok(())
+    }
+
+    pub fn upgrade_stake_manager(ctx: Context<UpgradeStakeManager>) -> Result<()> {
+        check_context(&ctx)?;
+
+        ctx.accounts.process()?;
+
+        Ok(())
+    }
+
+    // balancer
 
     pub fn redelegate(ctx: Context<Redelegate>, redelegate_amount: u64) -> Result<()> {
         check_context(&ctx)?;

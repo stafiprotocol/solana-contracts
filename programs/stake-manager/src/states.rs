@@ -4,8 +4,39 @@ pub use crate::errors::Errors;
 
 #[account]
 #[derive(Debug)]
+pub struct StakeManagerOld {
+    pub admin: Pubkey,
+    pub rsol_mint: Pubkey,
+    pub fee_recipient: Pubkey,
+    pub pool_seed_bump: u8,
+    pub rent_exempt_for_pool_acc: u64,
+
+    pub min_stake_amount: u64,
+    pub unstake_fee_commission: u64,  // decimals 9
+    pub protocol_fee_commission: u64, // decimals 9
+    pub rate_change_limit: u64,       // decimals 9
+    pub stake_accounts_len_limit: u64,
+    pub split_accounts_len_limit: u64,
+    pub unbonding_duration: u64,
+
+    pub latest_era: u64,
+    pub rate: u64, // decimals 9
+    pub era_bond: u64,
+    pub era_unbond: u64,
+    pub active: u64,
+    pub total_rsol_supply: u64,
+    pub total_protocol_fee: u64,
+    pub validators: Vec<Pubkey>,
+    pub stake_accounts: Vec<Pubkey>,
+    pub split_accounts: Vec<Pubkey>,
+    pub era_process_data: EraProcessData,
+}
+
+#[account]
+#[derive(Debug)]
 pub struct StakeManager {
     pub admin: Pubkey,
+    pub balancer: Pubkey,
     pub rsol_mint: Pubkey,
     pub fee_recipient: Pubkey,
     pub pool_seed_bump: u8,

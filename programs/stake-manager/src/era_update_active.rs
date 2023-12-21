@@ -5,7 +5,7 @@ use anchor_spl::stake::StakeAccount;
 #[derive(Accounts)]
 pub struct EraUpdateActive<'info> {
     #[account(mut)]
-    pub stake_manager: Account<'info, StakeManager>,
+    pub stake_manager: Box<Account<'info, StakeManager>>,
 
     pub stake_account: Account<'info, StakeAccount>,
 }
