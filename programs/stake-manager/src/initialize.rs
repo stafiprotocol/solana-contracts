@@ -66,6 +66,7 @@ impl<'info> Initialize<'info> {
 
         self.stake_manager.set_inner(StakeManager {
             admin: self.admin.key(),
+            balancer: self.admin.key(),
             rsol_mint: initialize_data.rsol_mint,
             rent_exempt_for_pool_acc,
             pool_seed_bump,
@@ -103,7 +104,7 @@ impl<'info> Initialize<'info> {
 #[derive(Accounts)]
 pub struct MigrateStakeAccount<'info> {
     #[account(mut)]
-    pub stake_manager: Account<'info, StakeManager>,
+    pub stake_manager: Box<Account<'info, StakeManager>>,
 
     #[account(
         seeds = [
@@ -140,6 +141,12 @@ impl<'info> MigrateStakeAccount<'info> {
             delegation.deactivation_epoch,
             std::u64::MAX,
             Errors::StakeAccountNotActive
+        );
+
+        require_gt!(
+            self.stake_manager.stake_accounts_len_limit,
+            self.stake_manager.stake_accounts.len() as u64,
+            Errors::StakeAccountsLenOverLimit
         );
 
         if !self

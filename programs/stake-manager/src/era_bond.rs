@@ -17,7 +17,7 @@ use anchor_spl::stake::{Stake, StakeAccount};
 #[derive(Accounts)]
 pub struct EraBond<'info> {
     #[account(mut)]
-    pub stake_manager: Account<'info, StakeManager>,
+    pub stake_manager: Box<Account<'info, StakeManager>>,
 
     /// CHECK: validator account
     #[account(mut)]

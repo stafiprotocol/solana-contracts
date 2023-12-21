@@ -6,7 +6,7 @@ use anchor_spl::stake::{withdraw, Stake, StakeAccount, Withdraw};
 #[derive(Accounts)]
 pub struct EraWithdraw<'info> {
     #[account(mut)]
-    pub stake_manager: Account<'info, StakeManager>,
+    pub stake_manager: Box<Account<'info, StakeManager>>,
 
     #[account(
         mut,

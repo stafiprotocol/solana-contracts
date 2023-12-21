@@ -16,7 +16,7 @@ use anchor_spl::stake::{
 #[derive(Accounts)]
 pub struct EraUnbond<'info> {
     #[account(mut)]
-    pub stake_manager: Account<'info, StakeManager>,
+    pub stake_manager: Box<Account<'info, StakeManager>>,
 
     #[account(
         seeds = [

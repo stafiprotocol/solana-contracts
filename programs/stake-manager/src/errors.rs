@@ -11,6 +11,9 @@ pub enum Errors {
     #[msg("Admin not match")]
     AdminNotMatch,
 
+    #[msg("Balancer not match")]
+    BalancerNotMatch,
+
     #[msg("Initialize data not match")]
     InitializeDataMatch,
 
@@ -115,4 +118,7 @@ pub enum Errors {
 
     #[msg("Mint to owner not match")]
     MintToOwnerNotMatch,
+
+    #[msg("Stake accounts len over limit")]
+    StakeAccountsLenOverLimit,
 }

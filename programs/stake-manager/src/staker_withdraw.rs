@@ -5,7 +5,7 @@ use anchor_lang::system_program::{transfer, Transfer};
 #[derive(Accounts)]
 pub struct Withdraw<'info> {
     #[account(mut)]
-    pub stake_manager: Account<'info, StakeManager>,
+    pub stake_manager: Box<Account<'info, StakeManager>>,
 
     #[account(
         mut,

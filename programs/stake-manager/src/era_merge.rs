@@ -7,7 +7,7 @@ use anchor_spl::stake::{Stake, StakeAccount};
 #[derive(Accounts)]
 pub struct EraMerge<'info> {
     #[account(mut)]
-    pub stake_manager: Account<'info, StakeManager>,
+    pub stake_manager: Box<Account<'info, StakeManager>>,
 
     #[account(mut)]
     pub src_stake_account: Box<Account<'info, StakeAccount>>,
