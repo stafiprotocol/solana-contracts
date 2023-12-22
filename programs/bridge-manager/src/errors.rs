@@ -40,4 +40,6 @@ pub enum Errors {
     NotSupportMintType,
     #[msg("Admin not match")]
     AdminNotMatch,
+    #[msg("Program id not match")]
+    ProgramIdNotMatch,
 }

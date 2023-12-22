@@ -126,14 +126,14 @@ pub struct Approve<'info> {
 
     #[account(
         mut,
-        address = mint_manager.rsol_mint
+        address = proposal.mint
     )]
     pub mint: Box<Account<'info, Mint>>,
 
     // token account which has been initiated
     #[account(
         mut,
-        token::mint = mint_manager.rsol_mint
+        token::mint = mint
     )]
     pub to: Box<Account<'info, TokenAccount>>,
 

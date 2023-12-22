@@ -5,7 +5,7 @@ mod tx_accounts;
 
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, spl_token::instruction::AuthorityType};
-use anchor_spl::token::{burn, Burn};
+use anchor_spl::token::{burn, mint_to, Burn, MintTo};
 use mint_manager_program::cpi::accounts::MintToken;
 use mint_manager_program::{self};
 use std::collections::BTreeMap;
@@ -34,6 +34,9 @@ pub mod bridge_manager_program {
         fee_receiver: Pubkey,
         fee_amounts: BTreeMap<u8, u64>,
     ) -> Result<()> {
+        if !check_id(ctx.program_id) {
+            return err!(Errors::ProgramIdNotMatch);
+        }
         msg!("stafi: create bridge");
         let bridge = &mut ctx.accounts.bridge;
         bridge.owners = owners;
@@ -55,24 +58,36 @@ pub mod bridge_manager_program {
         resource_id: [u8; 32],
         mint: Pubkey,
     ) -> Result<()> {
+        if !check_id(ctx.program_id) {
+            return err!(Errors::ProgramIdNotMatch);
+        }
         let bridge = &mut ctx.accounts.bridge;
         bridge.resource_id_to_mint.insert(resource_id, mint);
         Ok(())
     }
 
     pub fn set_support_chain_ids(ctx: Context<AdminAuth>, chain_ids: Vec<u8>) -> Result<()> {
+        if !check_id(ctx.program_id) {
+            return err!(Errors::ProgramIdNotMatch);
+        }
         let bridge = &mut ctx.accounts.bridge;
         bridge.support_chain_ids = chain_ids;
         Ok(())
     }
 
     pub fn set_fee_receiver(ctx: Context<AdminAuth>, fee_receiver: Pubkey) -> Result<()> {
+        if !check_id(ctx.program_id) {
+            return err!(Errors::ProgramIdNotMatch);
+        }
         let bridge = &mut ctx.accounts.bridge;
         bridge.fee_receiver = fee_receiver;
         Ok(())
     }
 
     pub fn set_fee_amount(ctx: Context<AdminAuth>, dest_chain_id: u8, amount: u64) -> Result<()> {
+        if !check_id(ctx.program_id) {
+            return err!(Errors::ProgramIdNotMatch);
+        }
         let bridge = &mut ctx.accounts.bridge;
         bridge.fee_amounts.insert(dest_chain_id, amount);
         Ok(())
@@ -80,6 +95,9 @@ pub mod bridge_manager_program {
 
     // Sets the owners field on the bridge.
     pub fn set_owners(ctx: Context<AdminAuth>, owners: Vec<Pubkey>) -> Result<()> {
+        if !check_id(ctx.program_id) {
+            return err!(Errors::ProgramIdNotMatch);
+        }
         let owners_len = owners.len() as u64;
         if owners_len == 0 {
             return err!(Errors::InvalidOwnerLength);
@@ -97,6 +115,9 @@ pub mod bridge_manager_program {
 
     // change_threshold.
     pub fn change_threshold(ctx: Context<AdminAuth>, threshold: u64) -> Result<()> {
+        if !check_id(ctx.program_id) {
+            return err!(Errors::ProgramIdNotMatch);
+        }
         if threshold == 0 {
             return err!(Errors::InvalidThreshold);
         }
@@ -112,6 +133,9 @@ pub mod bridge_manager_program {
         ctx: Context<SetMintAuthority>,
         new_mint_authority: Pubkey,
     ) -> Result<()> {
+        if !check_id(ctx.program_id) {
+            return err!(Errors::ProgramIdNotMatch);
+        }
         set_authority(
             CpiContext::new_with_signer(
                 ctx.accounts.token_program.to_account_info(),
@@ -148,6 +172,9 @@ pub mod bridge_manager_program {
         receiver: Vec<u8>,
         dest_chain_id: u8,
     ) -> Result<()> {
+        if !check_id(ctx.program_id) {
+            return err!(Errors::ProgramIdNotMatch);
+        }
         msg!("stafi: transfer out");
         //check mint
         let mint_of_from = token::accessor::mint(&ctx.accounts.from.to_account_info())?;
@@ -244,6 +271,9 @@ pub mod bridge_manager_program {
         amount: u64,
         token_program: Pubkey,
     ) -> Result<()> {
+        if !check_id(ctx.program_id) {
+            return err!(Errors::ProgramIdNotMatch);
+        }
         msg!("stafi: create mint proposal");
         let _ = ctx
             .accounts
@@ -284,6 +314,9 @@ pub mod bridge_manager_program {
 
     // Approve and Executes the given proposal if threshold owners have signed it.
     pub fn approve_mint_proposal(ctx: Context<Approve>) -> Result<()> {
+        if !check_id(ctx.program_id) {
+            return err!(Errors::ProgramIdNotMatch);
+        }
         msg!("stafi: approve_mint_proposal");
         let owner_index = ctx
             .accounts
@@ -322,22 +355,42 @@ pub mod bridge_manager_program {
         }
 
         // Execute the mint proposal signed by the bridge.
-        let cpi_program = ctx.accounts.mint_manager_program.to_account_info();
-        let cpi_accounts = MintToken {
-            mint_manager: ctx.accounts.mint_manager.to_account_info(),
-            rsol_mint: ctx.accounts.mint.to_account_info(),
-            mint_to: ctx.accounts.to.to_account_info(),
-            mint_authority: ctx.accounts.mint_authority.to_account_info(),
-            ext_mint_authority: ctx.accounts.bridge_signer.to_account_info(),
-            token_program: ctx.accounts.token_program.to_account_info(),
-        };
-        mint_manager_program::cpi::mint_token(
-            CpiContext::new(cpi_program, cpi_accounts).with_signer(&[&[
-                &ctx.accounts.bridge.key().to_bytes(),
-                &[ctx.accounts.bridge.nonce],
-            ]]),
-            ctx.accounts.proposal.amount,
-        )?;
+        if ctx.accounts.mint.key() == ctx.accounts.mint_manager.rsol_mint.key() {
+            // rsol case
+            let cpi_program = ctx.accounts.mint_manager_program.to_account_info();
+            let cpi_accounts = MintToken {
+                mint_manager: ctx.accounts.mint_manager.to_account_info(),
+                rsol_mint: ctx.accounts.mint.to_account_info(),
+                mint_to: ctx.accounts.to.to_account_info(),
+                mint_authority: ctx.accounts.mint_authority.to_account_info(),
+                ext_mint_authority: ctx.accounts.bridge_signer.to_account_info(),
+                token_program: ctx.accounts.token_program.to_account_info(),
+            };
+            mint_manager_program::cpi::mint_token(
+                CpiContext::new(cpi_program, cpi_accounts).with_signer(&[&[
+                    &ctx.accounts.bridge.key().to_bytes(),
+                    &[ctx.accounts.bridge.nonce],
+                ]]),
+                ctx.accounts.proposal.amount,
+            )?;
+        } else {
+            // other token case
+            mint_to(
+                CpiContext::new_with_signer(
+                    ctx.accounts.token_program.to_account_info(),
+                    MintTo {
+                        mint: ctx.accounts.mint.to_account_info(),
+                        to: ctx.accounts.to.to_account_info(),
+                        authority: ctx.accounts.bridge_signer.to_account_info(),
+                    },
+                    &[&[
+                        &ctx.accounts.bridge.key().to_bytes(),
+                        &[ctx.accounts.bridge.nonce],
+                    ]],
+                ),
+                ctx.accounts.proposal.amount,
+            )?;
+        }
 
         // Burn the mint proposal to ensure one time use.
         ctx.accounts.proposal.did_execute = true;
