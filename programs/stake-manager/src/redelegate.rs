@@ -81,7 +81,12 @@ pub struct EventRedelegate {
 
 impl<'info> Redelegate<'info> {
     pub fn process(&mut self, redelegate_amount: u64) -> Result<()> {
-        require!(self.stake_manager.era_process_data.is_empty(), Errors::EraIsProcessing);
+        require_gt!(redelegate_amount, 0, Errors::AmountUnmatch);
+
+        require!(
+            self.stake_manager.era_process_data.is_empty(), 
+            Errors::EraIsProcessing)
+        ;
 
         require!(
             self.stake_manager
@@ -129,7 +134,7 @@ impl<'info> Redelegate<'info> {
 
         require_gte!(delegation.stake, redelegate_amount, Errors::AmountUnmatch);
 
-        if redelegate_amount < delegation.stake {
+        let will_redelegate_from_stake_account =  if redelegate_amount < delegation.stake {
             // split
             let split_instruction = stake::instruction::split(
                 self.from_stake_account.to_account_info().key,
@@ -156,37 +161,7 @@ impl<'info> Redelegate<'info> {
                 ]],
             )?;
 
-            // redelegate
-            let redelegate_instruction = &stake::instruction::redelegate(
-                &self.split_stake_account.key(),
-                &self.stake_pool.key(),
-                &self.to_validator.key(),
-                &self.to_stake_account.key(),
-            )
-            .last()
-            .unwrap()
-            .clone();
-            
-            invoke_signed(
-                redelegate_instruction,
-                &[
-                    self.stake_program.to_account_info(),
-                    self.split_stake_account.to_account_info(),
-                    self.to_stake_account.to_account_info(),
-                    self.to_validator.to_account_info(),
-                    self.stake_config.to_account_info(),
-                    self.stake_pool.to_account_info(),
-                ],
-                &[&[
-                    &self.stake_manager.key().to_bytes(),
-                    StakeManager::POOL_SEED,
-                    &[self.stake_manager.pool_seed_bump],
-                ]],
-            )?;
-
-            self.stake_manager
-                .split_accounts
-                .push(self.split_stake_account.key());
+            self.split_stake_account.to_account_info()
         } else {
             // withdraw rent reserve back to payer
             withdraw(
@@ -204,42 +179,45 @@ impl<'info> Redelegate<'info> {
                 None,
             )?;
 
-            // redelegate
-            let redelegate_instruction = &stake::instruction::redelegate(
-                &self.from_stake_account.key(),
-                &self.stake_pool.key(),
-                &self.to_validator.key(),
-                &self.to_stake_account.key(),
-            )
-            .last()
-            .unwrap()
-            .clone();
-
-            invoke_signed(
-                redelegate_instruction,
-                &[
-                    self.stake_program.to_account_info(),
-                    self.from_stake_account.to_account_info(),
-                    self.to_stake_account.to_account_info(),
-                    self.to_validator.to_account_info(),
-                    self.stake_config.to_account_info(),
-                    self.stake_pool.to_account_info(),
-                ],
-                &[&[
-                    &self.stake_manager.key().to_bytes(),
-                    StakeManager::POOL_SEED,
-                    &[self.stake_manager.pool_seed_bump],
-                ]],
-            )?;
-
             self.stake_manager
                 .stake_accounts
                 .retain(|&e| e != self.from_stake_account.key());
 
-            self.stake_manager
-                .split_accounts
-                .push(self.from_stake_account.key());
-        }
+            self.from_stake_account.to_account_info()
+        };
+
+        // redelegate
+        let redelegate_instruction = &stake::instruction::redelegate(
+            &will_redelegate_from_stake_account.key(),
+            &self.stake_pool.key(),
+            &self.to_validator.key(),
+            &self.to_stake_account.key(),
+        )
+        .last()
+        .unwrap()
+        .clone();
+
+        invoke_signed(
+            redelegate_instruction,
+                &[
+                self.stake_program.to_account_info(),
+                will_redelegate_from_stake_account.clone(),
+                self.to_stake_account.to_account_info(),
+                self.to_validator.to_account_info(),
+                self.stake_config.to_account_info(),
+                self.stake_pool.to_account_info(),
+            ],
+            &[&[
+                &self.stake_manager.key().to_bytes(),
+                StakeManager::POOL_SEED,
+                &[self.stake_manager.pool_seed_bump],
+            ]],
+        )?;
+
+
+        self.stake_manager
+            .split_accounts
+            .push(will_redelegate_from_stake_account.key());
 
         self.stake_manager
             .stake_accounts

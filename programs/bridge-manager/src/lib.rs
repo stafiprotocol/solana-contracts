@@ -158,6 +158,7 @@ pub mod bridge_manager_program {
     #[event]
     pub struct EventTransferOut {
         pub transfer: Pubkey,
+        pub mint: Pubkey,
         pub receiver: Vec<u8>,
         pub amount: u64,
         pub dest_chain_id: u8,
@@ -254,6 +255,7 @@ pub mod bridge_manager_program {
         // emit log data
         emit!(EventTransferOut {
             transfer: ctx.accounts.from.key(),
+            mint: ctx.accounts.mint.key(),
             receiver: receiver,
             amount: amount,
             dest_chain_id: dest_chain_id,
@@ -312,6 +314,12 @@ pub mod bridge_manager_program {
         Ok(())
     }
 
+    #[event]
+    pub struct EventExecMintProposal {
+        pub receiver: Pubkey,
+        pub mint: Pubkey,
+        pub amount: u64,
+    }
     // Approve and Executes the given proposal if threshold owners have signed it.
     pub fn approve_mint_proposal(ctx: Context<Approve>) -> Result<()> {
         if !check_id(ctx.program_id) {
@@ -394,6 +402,12 @@ pub mod bridge_manager_program {
 
         // Burn the mint proposal to ensure one time use.
         ctx.accounts.proposal.did_execute = true;
+
+        emit!(EventExecMintProposal {
+            receiver: ctx.accounts.to.key(),
+            mint: ctx.accounts.mint.key(),
+            amount: ctx.accounts.proposal.amount
+        });
         msg!("stafi: approve and execute proposal ok");
         Ok(())
     }

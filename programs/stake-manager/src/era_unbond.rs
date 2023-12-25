@@ -73,11 +73,6 @@ impl<'info> EraUnbond<'info> {
         );
 
         require!(
-            self.stake_manager.validators.contains(self.validator.key),
-            Errors::ValidatorNotExist
-        );
-
-        require!(
             self.stake_manager
                 .stake_accounts
                 .contains(&self.from_stake_account.key()),
@@ -105,7 +100,8 @@ impl<'info> EraUnbond<'info> {
 
         let total_need_unbond = self.stake_manager.era_process_data.need_unbond;
 
-        if delegation.stake <= total_need_unbond {
+        let (will_deactive_account, will_deactive_amount) = if delegation.stake <= total_need_unbond
+        {
             // withdraw rent reserve back to payer
             withdraw(
                 CpiContext::new(
@@ -122,21 +118,6 @@ impl<'info> EraUnbond<'info> {
                 None,
             )?;
 
-            // deactive
-            solana_deactivate_stake(CpiContext::new_with_signer(
-                self.stake_program.to_account_info(),
-                SolanaDeactivateStake {
-                    stake: self.from_stake_account.to_account_info(),
-                    staker: self.stake_pool.to_account_info(),
-                    clock: self.clock.to_account_info(),
-                },
-                &[&[
-                    &self.stake_manager.key().to_bytes(),
-                    StakeManager::POOL_SEED,
-                    &[self.stake_manager.pool_seed_bump],
-                ]],
-            ))?;
-
             self.stake_manager
                 .stake_accounts
                 .retain(|&e| e != self.from_stake_account.key());
@@ -146,18 +127,7 @@ impl<'info> EraUnbond<'info> {
                 .pending_stake_accounts
                 .retain(|&e| e != self.from_stake_account.key());
 
-            self.stake_manager
-                .split_accounts
-                .push(self.from_stake_account.key());
-
-            self.stake_manager.era_process_data.need_unbond -= delegation.stake;
-
-            emit!(EventEraUnbond {
-                era: self.stake_manager.latest_era,
-                from_stake_account: self.from_stake_account.key(),
-                split_account: self.from_stake_account.key(),
-                unbond_amount: delegation.stake
-            });
+            (self.from_stake_account.to_account_info(), delegation.stake)
         } else {
             // split
             let split_instruction = stake::instruction::split(
@@ -185,35 +155,39 @@ impl<'info> EraUnbond<'info> {
                 ]],
             )?;
 
-            // deactive
-            solana_deactivate_stake(CpiContext::new_with_signer(
-                self.stake_program.to_account_info(),
-                SolanaDeactivateStake {
-                    stake: self.split_stake_account.to_account_info(),
-                    staker: self.stake_pool.to_account_info(),
-                    clock: self.clock.to_account_info(),
-                },
-                &[&[
-                    &self.stake_manager.key().to_bytes(),
-                    StakeManager::POOL_SEED,
-                    &[self.stake_manager.pool_seed_bump],
-                ]],
-            ))?;
+            (
+                self.split_stake_account.to_account_info(),
+                total_need_unbond,
+            )
+        };
 
-            self.stake_manager
-                .split_accounts
-                .push(self.split_stake_account.key());
+        // deactive
+        solana_deactivate_stake(CpiContext::new_with_signer(
+            self.stake_program.to_account_info(),
+            SolanaDeactivateStake {
+                stake: will_deactive_account.clone(),
+                staker: self.stake_pool.to_account_info(),
+                clock: self.clock.to_account_info(),
+            },
+            &[&[
+                &self.stake_manager.key().to_bytes(),
+                StakeManager::POOL_SEED,
+                &[self.stake_manager.pool_seed_bump],
+            ]],
+        ))?;
 
-            self.stake_manager.era_process_data.need_unbond -= total_need_unbond;
+        self.stake_manager
+            .split_accounts
+            .push(will_deactive_account.key());
 
-            emit!(EventEraUnbond {
-                era: self.stake_manager.latest_era,
-                from_stake_account: self.from_stake_account.key(),
-                split_account: self.split_stake_account.key(),
-                unbond_amount: total_need_unbond
-            });
-        }
+        self.stake_manager.era_process_data.need_unbond -= will_deactive_amount;
 
+        emit!(EventEraUnbond {
+            era: self.stake_manager.latest_era,
+            from_stake_account: self.from_stake_account.key(),
+            split_account: will_deactive_account.key(),
+            unbond_amount: will_deactive_amount
+        });
         Ok(())
     }
 }
