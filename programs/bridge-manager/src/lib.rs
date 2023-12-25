@@ -158,6 +158,7 @@ pub mod bridge_manager_program {
     #[event]
     pub struct EventTransferOut {
         pub transfer: Pubkey,
+        pub mint: Pubkey,
         pub receiver: Vec<u8>,
         pub amount: u64,
         pub dest_chain_id: u8,
@@ -254,6 +255,7 @@ pub mod bridge_manager_program {
         // emit log data
         emit!(EventTransferOut {
             transfer: ctx.accounts.from.key(),
+            mint: ctx.accounts.mint.key(),
             receiver: receiver,
             amount: amount,
             dest_chain_id: dest_chain_id,
