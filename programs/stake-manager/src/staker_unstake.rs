@@ -43,6 +43,7 @@ pub struct EventUnstake {
     pub era: u64,
     pub staker: Pubkey,
     pub burn_rsol_from: Pubkey,
+    pub unstake_account: Pubkey,
     pub unstake_amount: u64,
     pub sol_amount: u64,
     pub unstake_fee: u64,
@@ -121,6 +122,7 @@ impl<'info> Unstake<'info> {
             era: self.stake_manager.latest_era, 
             staker: self.burn_rsol_from.owner, 
             burn_rsol_from: self.burn_rsol_from.key(), 
+            unstake_account: self.unstake_account.key(),
             unstake_amount, 
             sol_amount, 
             unstake_fee 
