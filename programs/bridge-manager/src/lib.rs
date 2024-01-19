@@ -15,7 +15,7 @@ pub use crate::errors::*;
 pub use crate::states::*;
 pub use crate::tx_accounts::*;
 
-declare_id!("EPfxck35M3NJwsjreExLLyQAgAL3y5uWfzddY6cHBrGy");
+declare_id!("H3mPx8i41Zn4dLC6ZQRBzNRe1cqYdbcDP1WpojnaiAVo");
 
 #[program]
 pub mod bridge_manager_program {
