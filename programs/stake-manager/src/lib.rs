@@ -62,14 +62,6 @@ pub mod stake_manager_program {
         Ok(())
     }
 
-    pub fn migrate_stake_account(ctx: Context<MigrateStakeAccount>) -> Result<()> {
-        check_context(&ctx)?;
-
-        ctx.accounts.process()?;
-
-        Ok(())
-    }
-
     // admin
 
     pub fn transfer_admin(ctx: Context<TransferAdmin>, new_admin: Pubkey) -> Result<()> {
@@ -84,6 +76,14 @@ pub mod stake_manager_program {
         check_context(&ctx)?;
 
         ctx.accounts.process(new_balancer)?;
+
+        Ok(())
+    }
+    
+    pub fn transfer_fee_recipient(ctx: Context<TransferFeeRecipient>, new_fee_recipient: Pubkey) -> Result<()> {
+        check_context(&ctx)?;
+
+        ctx.accounts.process(new_fee_recipient)?;
 
         Ok(())
     }

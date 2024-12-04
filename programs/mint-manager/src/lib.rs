@@ -10,7 +10,6 @@ pub use crate::admin::*;
 pub use crate::errors::Errors;
 pub use crate::initialize::*;
 pub use crate::mint::*;
-pub use crate::states::*;
 
 declare_id!("AotGLC7pEv9BZjEcnQ4GJWLaUXPfRVYfqtuQ4Z69jERS");
 

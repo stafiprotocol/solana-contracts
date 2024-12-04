@@ -1,12 +1,8 @@
-use anchor_lang::prelude::*;
-use anchor_lang::solana_program::stake::instruction::LockupArgs;
-use anchor_lang::solana_program::{program::invoke, stake, stake::state::StakeAuthorize};
-use anchor_spl::stake::{Stake, StakeAccount};
-use anchor_spl::token::{Mint, TokenAccount};
-
 pub use crate::errors::Errors;
 use crate::EraProcessData;
 pub use crate::StakeManager;
+use anchor_lang::prelude::*;
+use anchor_spl::token::{Mint, TokenAccount};
 
 #[derive(Accounts)]
 pub struct Initialize<'info> {
@@ -96,137 +92,6 @@ impl<'info> Initialize<'info> {
                 pending_stake_accounts: vec![],
             },
         });
-
-        Ok(())
-    }
-}
-
-#[derive(Accounts)]
-pub struct MigrateStakeAccount<'info> {
-    #[account(mut)]
-    pub stake_manager: Box<Account<'info, StakeManager>>,
-
-    #[account(
-        seeds = [
-            &stake_manager.key().to_bytes(),
-            StakeManager::POOL_SEED,
-        ],
-        bump = stake_manager.pool_seed_bump
-    )]
-    pub stake_pool: SystemAccount<'info>,
-
-    #[account(mut)]
-    pub stake_account: Box<Account<'info, StakeAccount>>,
-
-    pub stake_authority: Signer<'info>,
-
-    pub stake_program: Program<'info, Stake>,
-    pub clock: Sysvar<'info, Clock>,
-}
-
-impl<'info> MigrateStakeAccount<'info> {
-    pub fn process(&mut self) -> Result<()> {
-        let delegation = self
-            .stake_account
-            .delegation()
-            .ok_or_else(|| error!(Errors::DelegationEmpty))?;
-
-        require_gte!(
-            delegation.stake,
-            self.stake_manager.min_stake_amount,
-            Errors::StakeAmountTooLow
-        );
-
-        require_eq!(
-            delegation.deactivation_epoch,
-            std::u64::MAX,
-            Errors::StakeAccountNotActive
-        );
-
-        require_gt!(
-            self.stake_manager.stake_accounts_len_limit,
-            self.stake_manager.stake_accounts.len() as u64,
-            Errors::StakeAccountsLenOverLimit
-        );
-
-        if !self
-            .stake_manager
-            .validators
-            .contains(&delegation.voter_pubkey)
-        {
-            return err!(Errors::ValidatorNotExist);
-        }
-        if self
-            .stake_manager
-            .stake_accounts
-            .contains(&self.stake_account.key())
-        {
-            return err!(Errors::StakeAccountAlreadyExist);
-        }
-
-        let lockup = self.stake_account.lockup().unwrap();
-        if lockup.is_in_force(&self.clock, None) {
-            return err!(Errors::StakeAccountWithLockup);
-        }
-
-        // clean old lockup
-        if lockup.custodian != Pubkey::default() {
-            invoke(
-                &stake::instruction::set_lockup(
-                    &self.stake_account.key(),
-                    &LockupArgs {
-                        unix_timestamp: Some(0),
-                        epoch: Some(0),
-                        custodian: Some(Pubkey::default()),
-                    },
-                    self.stake_authority.key,
-                ),
-                &[
-                    self.stake_program.to_account_info(),
-                    self.stake_account.to_account_info(),
-                    self.stake_authority.to_account_info(),
-                ],
-            )?;
-        }
-
-        // change new staker to stake pool
-        invoke(
-            &stake::instruction::authorize(
-                self.stake_account.to_account_info().key,
-                self.stake_authority.key,
-                &self.stake_pool.key(),
-                StakeAuthorize::Staker,
-                None,
-            ),
-            &[
-                self.stake_program.to_account_info(),
-                self.stake_account.to_account_info(),
-                self.clock.to_account_info(),
-                self.stake_authority.to_account_info(),
-            ],
-        )?;
-
-        // change new withdrawer to stake pool
-        invoke(
-            &stake::instruction::authorize(
-                self.stake_account.to_account_info().key,
-                self.stake_authority.key,
-                &self.stake_pool.key(),
-                StakeAuthorize::Withdrawer,
-                None,
-            ),
-            &[
-                self.stake_program.to_account_info(),
-                self.stake_account.to_account_info(),
-                self.clock.to_account_info(),
-                self.stake_authority.to_account_info(),
-            ],
-        )?;
-
-        // collect stake account
-        self.stake_manager
-            .stake_accounts
-            .push(self.stake_account.key());
 
         Ok(())
     }
